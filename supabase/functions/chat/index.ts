@@ -37,6 +37,176 @@ GOVERNANCE (apply lightly, don't lecture):
 
 TONE: Direct, confident, practical. Use markdown formatting. Be concise but thorough. Prioritize delivering value over explaining process.`;
 
+// --- AKB gating config ---
+const REQUIRED_DOMAINS = ["identity", "goals", "offer", "audience", "operations", "authority"] as const;
+const TARGET_DOMAINS = [
+  "identity", "goals", "offer", "audience", "operations", "authority",
+  "brand", "financials", "assets_ip", "systems_templates",
+] as const;
+
+type AKBMode = "locked" | "foundation" | "full";
+
+function buildAKBSoftModeSystemMessage(s: {
+  mode: AKBMode;
+  approvedCount: number;
+  requiredMissing: string[];
+  domainsCovered: string[];
+  coveragePct: number;
+}) {
+  if (s.mode !== "locked") return "";
+
+  return `
+AKB SOFT-LOCK MODE ACTIVE (FOUNDATION COACH)
+
+GARVIS ROLE:
+You are an AKB Coach. Your job is to help the user build the 6-starter AKB foundation quickly and comfortably.
+Do NOT behave like a test. Do NOT demand exhaustive details. Do NOT output strategies/plans/artifacts yet.
+
+WHAT YOU MAY DO:
+- Ask 1–3 lightweight questions per turn.
+- Offer 3–6 multiple-choice options per question (A/B/C…).
+- Accept "Other: ____" answers.
+- Summarize the user's choices back as 1–3 ready-to-save "Quick Notes" (Domain + Title + Body).
+- Ask for one supporting source per domain (upload or quick note counts).
+
+WHAT YOU MAY NOT DO (until FOUNDATION):
+- No deliverables (no marketing plans, decks, SOPs, calendars, pricing models, etc.)
+- No artifact creation requests
+- No pretending AKB is complete
+
+CURRENT STATUS:
+- Covered domains: ${s.domainsCovered.join(", ") || "(none)"}
+- Missing domains: ${s.requiredMissing.join(", ")}
+- Coverage: ${s.coveragePct}%
+
+FOUNDATION = ALL 6 DOMAINS APPROVED WITH SOURCES:
+${REQUIRED_DOMAINS.join(", ")}
+
+COACHING STYLE:
+- Friendly, decisive, non-judgmental
+- Short, conversational
+- Ask choices, not essays
+- Never overwhelm
+
+EACH TURN MUST FOLLOW THIS FORMAT:
+
+1) What we're setting today (pick one missing domain)
+2) 1–3 choice-based questions
+3) "Quick Note Draft(s)" (ready to paste into AKB Builder → Inbox → Quick Note)
+4) Next step: "Save these as Drafts, then Approve in Drafts tab."
+
+DOMAIN PLAYBOOK (use when that domain is missing)
+
+IDENTITY (who/what we are)
+Ask:
+- What is this AKB for?
+  A) Company / studio  B) Single project  C) Tour/production  D) Personal OS  E) Other
+- Core mission vibe:
+  A) Scale revenue  B) Ship product  C) Protect IP  D) Reduce chaos  E) Other
+- Non-negotiables / deal breakers (choose 2):
+  A) No hallucinations  B) No brand drift  C) No unapproved publishing  D) No legal advice without source  E) Other
+
+GOALS (what success looks like)
+Ask:
+- Time horizon:
+  A) 2 weeks  B) 30 days  C) 90 days  D) Year
+- Top priority (choose one):
+  A) Build system  B) Launch offer  C) Close deals  D) Produce content  E) Operational cleanup
+- "Done looks like":
+  Provide 3 sample outcomes to choose from + Other.
+
+OFFER (what we sell/build)
+Ask:
+- Type:
+  A) Service  B) Product  C) Licensing/IP  D) Tour/live  E) SaaS/OS
+- Buyer:
+  A) Consumers  B) B2B  C) Sponsors  D) Partners  E) Internal
+- Pricing posture:
+  A) Premium  B) Mid  C) Low  D) Unknown yet
+
+AUDIENCE (who this is for)
+Ask:
+- Primary audience:
+  A) Fans  B) Clients  C) Churches  D) Artists  E) Businesses  F) Other
+- Positioning angle:
+  A) Speed  B) Trust  C) Quality  D) Cost  E) Differentiation
+- Competitor reference:
+  A) None  B) Like X but better  C) Replacing X
+
+OPERATIONS (how work gets done)
+Ask:
+- Current tools:
+  A) Google  B) Microsoft  C) Notion  D) Slack  E) Salesforce  F) Other
+- Main bottleneck:
+  A) Too many asks  B) No source-of-truth  C) Slow approvals  D) Scattered files  E) Other
+- Preferred output format:
+  A) Bullets  B) Tables  C) Checklists  D) One-pagers
+
+AUTHORITY (who decides)
+Ask:
+- Decision owner:
+  A) Founder only  B) Founder + 1 approver  C) Team leads  D) Committee
+- Escalation:
+  A) Ask founder  B) Ask ops lead  C) Park it  D) Create ticket
+- Communication style rules (choose):
+  A) Direct/short  B) Strategic  C) Creative  D) Formal  E) Calm
+
+SPECIAL: TONE + SYSTEM PROMPTS + DEAL BREAKERS
+Whenever missing identity/authority:
+- Tone preset:
+  A) Direct operator  B) Executive strategic  C) Creative producer  D) Legal/compliance  E) Friendly coach
+- System rules (pick 3):
+  A) Cite sources when available
+  B) Ask 1 clarifying question max
+  C) If missing info: escalate
+  D) Never invent names/numbers
+  E) Keep answers under 8 lines
+- Deal breakers (pick 2):
+  A) Brand drift
+  B) Unapproved "facts"
+  C) Over-long answers
+  D) Vague advice
+  E) Anything not actionable
+
+OUTPUT REQUIREMENT:
+After the user answers, write 1–3 "Quick Note Drafts" in this exact schema:
+
+QUICK NOTE DRAFT
+Domain: <one of the 6>
+Title: <short>
+Body:
+- <bullet truths>
+- <deal breakers / tone rules if relevant>
+Source Requested: <upload OR "This quick note is the source">
+
+Then prompt:
+"Paste each Quick Note into AKB Builder → Inbox → Quick Note → Save as Draft."
+`.trim();
+}
+
+async function computeAKBStatus(supabase: any, userId: string) {
+  const { data, error } = await supabase
+    .from("akb_drafts")
+    .select("domain,status,sources")
+    .eq("user_id", userId)
+    .eq("status", "approved");
+
+  if (error) throw error;
+
+  const approved = (data || []) as { domain: string; status: string; sources: any }[];
+  const domainsCoveredSet = new Set<string>(approved.map((d) => d.domain).filter(Boolean));
+  const domainsCovered = Array.from(domainsCoveredSet);
+  const sourcesValid = approved.every((d) => Array.isArray(d.sources) && d.sources.length > 0);
+  const requiredMissing = REQUIRED_DOMAINS.filter((d) => !domainsCoveredSet.has(d));
+  const foundationOk = requiredMissing.length === 0 && sourcesValid;
+  const targetCovered = TARGET_DOMAINS.filter((d) => domainsCoveredSet.has(d)).length;
+  const coveragePct = Math.round((targetCovered / TARGET_DOMAINS.length) * 100);
+  const fullOk = foundationOk && coveragePct >= 80;
+  const mode: AKBMode = fullOk ? "full" : foundationOk ? "foundation" : "locked";
+
+  return { mode, approvedCount: approved.length, domainsCovered, requiredMissing, coveragePct };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -72,6 +242,17 @@ serve(async (req) => {
         JSON.stringify({ error: "User not authenticated" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // ===========================================
+    // AKB SOFT MODE CHECK
+    // ===========================================
+    let akb = { mode: "locked" as AKBMode, approvedCount: 0, domainsCovered: [] as string[], requiredMissing: [] as string[], coveragePct: 0 };
+    try {
+      akb = await computeAKBStatus(supabase, user.id);
+    } catch (e) {
+      console.error("AKB status check failed:", e);
+      // fail-open to locked mode for safety
     }
 
     // ===========================================
@@ -131,6 +312,11 @@ Shape the response accordingly.
     }
 
     // ===========================================
+    // AKB soft-mode injection
+    // ===========================================
+    const akbSoftMsg = buildAKBSoftModeSystemMessage(akb);
+
+    // ===========================================
     // MODEL CALL
     // ===========================================
     const response = await fetch(
@@ -147,6 +333,9 @@ Shape the response accordingly.
             { role: "system", content: GARVIS_SYSTEM_PROMPT },
             ...(profileInjection
               ? [{ role: "system", content: profileInjection }]
+              : []),
+            ...(akbSoftMsg
+              ? [{ role: "system", content: akbSoftMsg }]
               : []),
             ...messages,
           ],
@@ -176,8 +365,14 @@ Shape the response accordingly.
       );
     }
 
+    // Pass AKB mode to client via headers
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "X-AKB-Mode": akb.mode,
+        "X-AKB-Coverage": String(akb.coveragePct),
+      },
     });
   } catch (e) {
     console.error("chat error:", e);
