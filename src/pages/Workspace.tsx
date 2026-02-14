@@ -248,6 +248,11 @@ const Workspace = () => {
             setIsStreaming(false);
 
             if (meta?.akbMode) setAKBMode(meta.akbMode);
+
+            // Always refetch domain status so status bar stays in sync
+            await akbDomains.refetch();
+            akbStructure.refetch();
+
             if (typeof meta?.akbCoverage === "number" && !Number.isNaN(meta.akbCoverage)) {
               setAKBCoverage(meta.akbCoverage);
             }
@@ -258,7 +263,6 @@ const Workspace = () => {
                 toast.success("Domain Complete");
               }
               prevCompletedCount.current = newCount;
-              akbDomains.refetch();
             }
 
             if (fullResponse && convId) {
