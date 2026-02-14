@@ -81,7 +81,7 @@ serve(async (req) => {
     const uop = uopRow?.config_json as any;
 
     if (uop) {
-      const focus = uop.pigpen_focus || {
+      const focus = uop.garvis_lens || {
         systems: 0, creative: 0, architect: 0, business: 0, risk: 0,
       };
 
@@ -108,7 +108,7 @@ Tone: ${uop.tone || "default"}
 Include Risk Review: ${uop.include_risk_review ?? false}
 Advanced Notes: ${uop.advanced_notes || ""}
 
-PIG PEN FOCUS MIX (Normalized):
+GARVIS LENS (Normalized):
 Systems: ${norm.systems}%
 Creative: ${norm.creative}%
 Architect: ${norm.architect}%

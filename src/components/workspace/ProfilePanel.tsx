@@ -28,7 +28,7 @@ export function ProfilePanel({ version, onSave, onClose }: Props) {
   const [tone, setTone] = useState(existing?.tone || "default");
   const [riskReview, setRiskReview] = useState(existing?.include_risk_review ?? false);
   const [notes, setNotes] = useState(existing?.advanced_notes || "");
-  const [focus, setFocus] = useState(existing?.pigpen_focus || DEFAULT_FOCUS);
+  const [focus, setFocus] = useState(existing?.garvis_lens || DEFAULT_FOCUS);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export function ProfilePanel({ version, onSave, onClose }: Props) {
       setTone(c.tone || "default");
       setRiskReview(c.include_risk_review ?? false);
       setNotes(c.advanced_notes || "");
-      setFocus(c.pigpen_focus || DEFAULT_FOCUS);
+      setFocus(c.garvis_lens || DEFAULT_FOCUS);
     }
   }, [version]);
 
@@ -57,7 +57,7 @@ export function ProfilePanel({ version, onSave, onClose }: Props) {
       tone,
       include_risk_review: riskReview,
       advanced_notes: notes || undefined,
-      pigpen_focus: focus,
+      garvis_lens: focus,
     });
     setSaving(false);
   };
@@ -126,9 +126,9 @@ export function ProfilePanel({ version, onSave, onClose }: Props) {
           <Switch checked={riskReview} onCheckedChange={setRiskReview} />
         </div>
 
-        {/* Pig Pen Focus Mix */}
+        {/* GARVIS Lens */}
         <div className="space-y-3">
-          <Label className="text-xs font-semibold">Pig Pen Focus Mix</Label>
+          <Label className="text-xs font-semibold">GARVIS Lens</Label>
           {(Object.keys(DEFAULT_FOCUS) as (keyof typeof DEFAULT_FOCUS)[]).map((key) => {
             const pct = Math.round((focus[key] / total) * 100);
             return (
