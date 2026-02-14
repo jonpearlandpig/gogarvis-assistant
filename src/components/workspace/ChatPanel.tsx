@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Square, Copy, FileText, Check } from "lucide-react";
+import { Send, Square, Copy, FileText, Check, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useChatUrlIntake } from "@/hooks/useChatUrlIntake";
 import { UrlIngestPrompt } from "@/components/chat/UrlIngestPrompt";
+import { uploadAKBFile } from "@/lib/akbUpload";
 
 interface Props {
   messages: (Msg & { id?: string })[];
@@ -17,17 +18,68 @@ interface Props {
   onStop: () => void;
   onCreateArtifact?: (content: string) => void;
   onUrlIngested?: () => void;
+  userId?: string;
+  workspaceId?: string | null;
 }
 
-export function ChatPanel({ messages, isStreaming, onSend, onStop, onCreateArtifact, onUrlIngested }: Props) {
+type ComposerItem =
+  | "Upload a doc (PDF/TXT/MD)"
+  | "Add a website link"
+  | "Drop a receipt photo"
+  | "Paste inventory / pricing"
+  | "Paste a mission / offer";
+
+function ExampleChips({ onPick }: { onPick: (text: ComposerItem) => void }) {
+  const items: ComposerItem[] = [
+    "Upload a doc (PDF/TXT/MD)",
+    "Add a website link",
+    "Drop a receipt photo",
+    "Paste inventory / pricing",
+    "Paste a mission / offer",
+  ];
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((t) => (
+        <button
+          key={t}
+          onClick={() => onPick(t)}
+          className="rounded-full border border-border bg-muted/40 px-3 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        >
+          {t}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function ChatPanel({
+  messages,
+  isStreaming,
+  onSend,
+  onStop,
+  onCreateArtifact,
+  onUrlIngested,
+  userId,
+  workspaceId,
+}: Props) {
   const [input, setInput] = useState("");
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const urlIntake = useChatUrlIntake(onUrlIngested);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onClick = () => setMenuOpen(false);
+    window.addEventListener("click", onClick);
+    return () => window.removeEventListener("click", onClick);
+  }, [menuOpen]);
 
   const handleSubmit = () => {
     const text = input.trim();
@@ -36,10 +88,17 @@ export function ChatPanel({ messages, isStreaming, onSend, onStop, onCreateArtif
     onSend(text);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
+  const handlePickFiles = async (files: FileList) => {
+    if (!userId) return;
+    const arr = Array.from(files);
+    try {
+      for (const f of arr) {
+        await uploadAKBFile({ userId, workspaceId: workspaceId || null, file: f });
+      }
+      toast.success(`Uploaded ${arr.length} file(s)`);
+      onUrlIngested?.();
+    } catch (e: any) {
+      toast.error(e?.message || "Upload failed");
     }
   };
 
@@ -142,29 +201,123 @@ export function ChatPanel({ messages, isStreaming, onSend, onStop, onCreateArtif
         />
       )}
 
-      {/* Input */}
+      {/* Composer */}
       <div className="border-t border-border p-4">
-        <div className="mx-auto max-w-3xl flex gap-2">
-          <Textarea
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              urlIntake.scan(e.target.value);
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder="Go Garvis!"
-            className="min-h-[44px] max-h-32 resize-none bg-muted border-border font-mono text-sm"
-            rows={1}
-          />
-          {isStreaming ? (
-            <Button onClick={onStop} variant="outline" size="icon" className="shrink-0 border-destructive/50 hover:bg-destructive/10">
-              <Square className="h-4 w-4 text-destructive" />
-            </Button>
-          ) : (
-            <Button onClick={handleSubmit} size="icon" className="shrink-0" disabled={!input.trim()}>
-              <Send className="h-4 w-4" />
-            </Button>
-          )}
+        <div className="mx-auto max-w-3xl space-y-3">
+          {/* Example chips */}
+          <div className="flex items-start gap-2">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1 shrink-0">
+              Examples:
+            </span>
+            <ExampleChips
+              onPick={(t) => {
+                if (t === "Upload a doc (PDF/TXT/MD)" || t === "Drop a receipt photo") {
+                  fileRef.current?.click();
+                } else if (t === "Add a website link") {
+                  setInput("https://");
+                } else if (t === "Paste inventory / pricing") {
+                  setInput("Paste your inventory/pricing here:\n");
+                } else if (t === "Paste a mission / offer") {
+                  setInput("Paste your mission/offer here:\n");
+                }
+              }}
+            />
+          </div>
+
+          {/* Input row */}
+          <div className="flex items-end gap-2">
+            {/* Plus menu */}
+            <div className="relative">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen((p) => !p);
+                }}
+                className="h-9 w-9"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+
+              {menuOpen && (
+                <div
+                  className="absolute bottom-full left-0 mb-1 w-48 rounded-lg border border-border bg-card shadow-lg z-50 py-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      fileRef.current?.click();
+                    }}
+                  >
+                    Add files / photos
+                  </button>
+                  <button
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setInput("https://");
+                    }}
+                  >
+                    Add website link
+                  </button>
+                  <button
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setInput("");
+                    }}
+                  >
+                    Paste text
+                  </button>
+                </div>
+              )}
+
+              <input
+                ref={fileRef}
+                type="file"
+                className="hidden"
+                multiple
+                accept=".pdf,.txt,.md,.csv,.png,.jpg,.jpeg,.webp"
+                onChange={async (e) => {
+                  if (e.target.files && e.target.files.length) await handlePickFiles(e.target.files);
+                  e.currentTarget.value = "";
+                }}
+              />
+            </div>
+
+            <Textarea
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value);
+                urlIntake.scan(e.target.value);
+              }}
+              placeholder="Go Garvis!"
+              className="min-h-[44px] max-h-32 resize-none bg-muted border-border font-mono text-sm"
+              rows={1}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  if (!isStreaming) handleSubmit();
+                }
+              }}
+            />
+
+            {isStreaming ? (
+              <Button type="button" variant="secondary" className="h-9" onClick={onStop}>
+                <Square className="h-4 w-4 mr-2" />
+                Stop
+              </Button>
+            ) : (
+              <Button type="button" className="h-9" onClick={handleSubmit} disabled={!input.trim()}>
+                <Send className="h-4 w-4 mr-2" />
+                Send
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -12,7 +12,7 @@ import {
   SovereignRenameModal,
 } from "@/components/workspace/ProgressionModals";
 import { ModuleNudge } from "@/components/modules/ModuleNudge";
-import { ChatIntakeUpload } from "@/components/chat/ChatIntakeUpload";
+
 import { EntryLevelGate } from "@/components/onboarding/EntryLevelGate";
 import { useConversations } from "@/hooks/useConversations";
 import { useMessages } from "@/hooks/useMessages";
@@ -349,6 +349,8 @@ const Workspace = () => {
               onSend={handleSend}
               onStop={handleStop}
               onUrlIngested={() => gate.refetch()}
+              userId={user?.id}
+              workspaceId={null}
               onCreateArtifact={async (content) => {
                 if (akbMode !== "full") {
                   toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
@@ -360,19 +362,6 @@ const Workspace = () => {
                 toast.success("Artifact created");
               }}
             />
-
-            {chatOnly && user?.id && (
-              <div className="border-t border-border px-4 py-3 text-center">
-                <p className="text-xs text-muted-foreground mb-2">
-                  Upload a file or add a quick note to begin building your AKB.
-                </p>
-                <ChatIntakeUpload
-                  userId={user.id}
-                  workspaceId={null}
-                  onDone={() => gate.refetch()}
-                />
-              </div>
-            )}
           </div>
 
           {builderOnly && showAKBBuilder && (
