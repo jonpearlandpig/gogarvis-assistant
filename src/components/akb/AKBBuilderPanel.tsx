@@ -3,6 +3,7 @@ import { useAKBBuilder } from "@/hooks/useAKBBuilder";
 import { useAuth } from "@/hooks/useAuth";
 import { AKB_DOMAINS } from "@/lib/akbBuilder";
 import { uploadAKBFile } from "@/lib/akbUpload";
+import { DomainCoverageChecklist } from "@/components/akb/DomainCoverageChecklist";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 
@@ -54,7 +55,7 @@ export function AKBBuilderPanel({
       <div className="flex items-center justify-between">
         <div className="text-xs font-mono text-foreground">AKB Builder</div>
         <div className="text-[10px] text-muted-foreground">
-          Coverage {akb.metrics.coverage.pct}% • Conflicts{" "}
+          Coverage {akb.metrics.coverage.coveragePercent}% • Conflicts{" "}
           {akb.metrics.openConflicts} • Eligible{" "}
           {akb.metrics.eligible ? "YES" : "NO"}
         </div>
@@ -277,6 +278,13 @@ export function AKBBuilderPanel({
           <div className="text-xs font-mono text-foreground">
             AKB Law (immutable)
           </div>
+          <DomainCoverageChecklist
+            coveredDomains={akb.metrics.coverage.coveredDomains}
+            missingDomains={akb.metrics.coverage.missingDomains}
+            coveredCount={akb.metrics.coverage.coveredCount}
+            coveragePercent={akb.metrics.coverage.coveragePercent}
+            passesMinCoreDomains={akb.metrics.coverage.passesMinCoreDomains}
+          />
           <ScrollArea className="max-h-[520px]">
             <div className="space-y-1">
               {akb.law.map((l) => (

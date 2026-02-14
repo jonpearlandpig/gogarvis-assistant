@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { computeCoverage, publishEligible } from "@/lib/akbBuilder";
+import { computeDomainCoverageFromLaw, publishEligible } from "@/lib/akbBuilder";
 
 export function useAKBBuilder(
   userId: string | null,
@@ -222,8 +222,7 @@ export function useAKBBuilder(
   );
 
   const metrics = useMemo(() => {
-    const approved = drafts.filter((d) => d.status === "approved");
-    const coverage = computeCoverage(approved);
+    const coverage = computeDomainCoverageFromLaw({ lawEntries: law });
     const openConflicts = conflicts.filter(
       (c) => c.status === "open"
     ).length;
@@ -235,7 +234,7 @@ export function useAKBBuilder(
       openConflicts,
     });
     return { coverage, openConflicts, eligible };
-  }, [drafts, conflicts, gates]);
+  }, [law, conflicts, gates]);
 
   return {
     loading,
