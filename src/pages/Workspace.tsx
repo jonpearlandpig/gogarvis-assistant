@@ -13,6 +13,7 @@ import { streamChat } from "@/lib/stream-chat";
 import { toast } from "sonner";
 import { PanelRight, Database, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { UOPBadge } from "@/components/profile/UOPBadge";
 
 const Workspace = () => {
   const { user } = useAuth();
@@ -119,7 +120,12 @@ const Workspace = () => {
       />
 
       <div className="flex flex-1 flex-col">
-        <div className="flex items-center justify-end gap-1 border-b border-border px-4 py-2">
+        <div className="flex items-center justify-between border-b border-border px-4 py-2">
+          <UOPBadge
+            version={uopVersion}
+            onClick={() => { setShowProfile(!showProfile); if (!showProfile) { setShowAKB(false); setShowArtifacts(false); } }}
+          />
+          <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="sm"
@@ -147,6 +153,7 @@ const Workspace = () => {
             <PanelRight className="h-4 w-4" />
             Artifacts
           </Button>
+          </div>
         </div>
 
         <div className="flex flex-1 overflow-hidden">
