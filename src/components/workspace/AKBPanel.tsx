@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Database, Shield, Clock, Plus, ChevronRight, BookOpen } from "lucide-react";
+import { Database, Shield, Clock, Plus, ChevronRight, BookOpen, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useAKB, type AKBEntry, type LedgerEntry } from "@/hooks/useAKB";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SaveToAKBDialog } from "./SaveToAKBDialog";
+import { AKBTemplatePanel } from "./AKBTemplatePanel";
+import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 
 interface Props {
@@ -66,11 +68,15 @@ export function AKBPanel({ conversationId }: Props) {
         </Button>
       </div>
 
-      <Tabs defaultValue="entries" className="flex-1 flex flex-col">
+      <Tabs defaultValue={entries.length === 0 ? "templates" : "entries"} className="flex-1 flex flex-col">
         <TabsList className="mx-2 mt-2 bg-muted/50">
           <TabsTrigger value="entries" className="text-[10px] font-mono">
             <BookOpen className="h-3 w-3 mr-1" />
             Entries
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="text-[10px] font-mono">
+            <Layers className="h-3 w-3 mr-1" />
+            Templates
           </TabsTrigger>
           <TabsTrigger value="ledger" className="text-[10px] font-mono">
             <Shield className="h-3 w-3 mr-1" />
@@ -117,6 +123,20 @@ export function AKBPanel({ conversationId }: Props) {
               </div>
             )}
           </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="templates" className="flex-1 m-0">
+          <AKBTemplatePanel
+            conversationId={conversationId}
+            onApplyTemplate={async (templateEntries) => {
+              let count = 0;
+              for (const entry of templateEntries) {
+                const result = await addEntry(entry);
+                if (result) count++;
+              }
+              toast.success(`Applied ${count} entries to AKB`);
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="ledger" className="flex-1 m-0">
