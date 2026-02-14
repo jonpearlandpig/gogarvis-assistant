@@ -19,7 +19,8 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { streamChat, type AKBMeta } from "@/lib/stream-chat";
 import { GARVIS_UI } from "@/lib/garvis-ui-strings";
 import { toast } from "sonner";
-import { PanelRight, Database, User, Hammer } from "lucide-react";
+import { PanelRight, Database, User, Hammer, Receipt } from "lucide-react";
+import { buildReceiptReportArtifactSeed } from "@/lib/receiptsToArtifact";
 import { Button } from "@/components/ui/button";
 import { UOPBadge } from "@/components/profile/UOPBadge";
 
@@ -209,6 +210,24 @@ const Workspace = () => {
 
   const artifactsAllowed = akbMode === "full";
 
+  const createReceiptsReportArtifact = useCallback(async () => {
+    if (!user?.id) return;
+    if (!artifactsAllowed) {
+      toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
+      togglePanel("akbBuilder");
+      return;
+    }
+    try {
+      const filters = { reimbursable: true };
+      const { title, seed, rowsCount } = await buildReceiptReportArtifactSeed(filters);
+      await createArtifact(title, "csv", seed);
+      toast.success(`Artifact created: ${rowsCount} rows`);
+      togglePanel("artifacts");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to build receipts report");
+    }
+  }, [user?.id, artifactsAllowed, akbCoverage, createArtifact, togglePanel]);
+
   // ─── Render ─────────────────────────────────────────────
   return (
     <div className="flex h-screen w-full bg-background">
@@ -248,6 +267,9 @@ const Workspace = () => {
             </Button>
             <Button variant="ghost" size="sm" onClick={() => togglePanel("artifacts")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
               <PanelRight className="h-4 w-4" /> Artifacts
+            </Button>
+            <Button variant="ghost" size="sm" onClick={createReceiptsReportArtifact} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
+              <Receipt className="h-4 w-4" /> Receipts Report
             </Button>
           </div>
         </div>

@@ -469,6 +469,69 @@ export type Database = {
           },
         ]
       }
+      receipts: {
+        Row: {
+          category: string | null
+          created_at: string
+          currency: string
+          extracted_json: Json
+          id: string
+          payment_last4: string | null
+          project_tag: string | null
+          receipt_date: string | null
+          reimbursable: boolean
+          source_hash: string | null
+          source_mime: string | null
+          source_path: string | null
+          tax_amount: number | null
+          telauthorium_id: string
+          total_amount: number | null
+          user_id: string
+          vendor: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          currency?: string
+          extracted_json?: Json
+          id?: string
+          payment_last4?: string | null
+          project_tag?: string | null
+          receipt_date?: string | null
+          reimbursable?: boolean
+          source_hash?: string | null
+          source_mime?: string | null
+          source_path?: string | null
+          tax_amount?: number | null
+          telauthorium_id: string
+          total_amount?: number | null
+          user_id: string
+          vendor?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          currency?: string
+          extracted_json?: Json
+          id?: string
+          payment_last4?: string | null
+          project_tag?: string | null
+          receipt_date?: string | null
+          reimbursable?: boolean
+          source_hash?: string | null
+          source_mime?: string | null
+          source_path?: string | null
+          tax_amount?: number | null
+          telauthorium_id?: string
+          total_amount?: number | null
+          user_id?: string
+          vendor?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
       telauthorium_ledger: {
         Row: {
           action: string
@@ -563,7 +626,54 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_receipts_report: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          currency: string | null
+          id: string | null
+          payment_last4: string | null
+          project_tag: string | null
+          receipt_date: string | null
+          reimbursable: boolean | null
+          source_path: string | null
+          tax_amount: number | null
+          telauthorium_id: string | null
+          total_amount: number | null
+          vendor: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string | null
+          payment_last4?: string | null
+          project_tag?: string | null
+          receipt_date?: string | null
+          reimbursable?: boolean | null
+          source_path?: string | null
+          tax_amount?: number | null
+          telauthorium_id?: string | null
+          total_amount?: number | null
+          vendor?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string | null
+          payment_last4?: string | null
+          project_tag?: string | null
+          receipt_date?: string | null
+          reimbursable?: boolean | null
+          source_path?: string | null
+          tax_amount?: number | null
+          telauthorium_id?: string | null
+          total_amount?: number | null
+          vendor?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       gen_telauthorium_id: { Args: never; Returns: string }
