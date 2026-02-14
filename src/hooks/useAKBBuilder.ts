@@ -112,6 +112,48 @@ export function useAKBBuilder(
 
   const setDraftStatus = useCallback(
     async (draftId: string, status: string) => {
+      if (status === "approved") {
+        // Find the draft to publish directly to law
+        const draft = drafts.find((d) => d.id === draftId);
+        if (!draft || !userId) {
+          toast.error("Draft not found");
+          return;
+        }
+
+        const { error: lawErr } = await supabase
+          .from("akb_law")
+          .insert({
+            user_id: userId,
+            workspace_id: workspaceId,
+            domain: draft.domain,
+            title: draft.title,
+            body_md: draft.body_md,
+            tags: draft.tags || [],
+            sources: draft.sources || [],
+            authority: {
+              decision_owner_role: "Founder",
+              decision_owner_id: userId,
+              scope: workspaceId ? "workspace" : "system",
+              approval_chain: [],
+            },
+          } as any);
+
+        if (lawErr) {
+          toast.error("Failed to publish to AKB Law");
+          return;
+        }
+
+        // Mark draft as published so it's hidden from drafts
+        await supabase
+          .from("akb_drafts")
+          .update({ status: "published" } as any)
+          .eq("id", draftId);
+
+        toast.success("Published to AKB Law");
+        await refetch();
+        return;
+      }
+
       const { error } = await supabase
         .from("akb_drafts")
         .update({ status } as any)
@@ -123,7 +165,7 @@ export function useAKBBuilder(
       }
       await refetch();
     },
-    [refetch]
+    [userId, workspaceId, drafts, refetch]
   );
 
   const publishApprovedDrafts = useCallback(
