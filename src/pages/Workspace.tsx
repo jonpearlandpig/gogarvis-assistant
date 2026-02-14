@@ -56,7 +56,7 @@ const Workspace = () => {
 
   // ─── Progression state ──────────────────────────────────
   const [prevAKBMode, setPrevAKBMode] = useState<"locked" | "foundation" | "full">("locked");
-  const [workspaceRevealed, setWorkspaceRevealed] = useState(false);
+  const [workspaceRevealed, setWorkspaceRevealed] = useState(true);
   const [showFoundationComplete, setShowFoundationComplete] = useState(false);
   const [showWorkspaceReveal, setShowWorkspaceReveal] = useState(false);
   const [showOperatorBanner, setShowOperatorBanner] = useState(false);
