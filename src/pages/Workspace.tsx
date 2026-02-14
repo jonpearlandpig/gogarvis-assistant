@@ -2,13 +2,14 @@ import { useState, useRef, useCallback } from "react";
 import { ConversationSidebar } from "@/components/workspace/ConversationSidebar";
 import { ChatPanel } from "@/components/workspace/ChatPanel";
 import { ArtifactPanel } from "@/components/workspace/ArtifactPanel";
+import { AKBPanel } from "@/components/workspace/AKBPanel";
 import { useConversations } from "@/hooks/useConversations";
 import { useMessages } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { streamChat } from "@/lib/stream-chat";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { PanelRight } from "lucide-react";
+import { PanelRight, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Workspace = () => {
@@ -18,6 +19,7 @@ const Workspace = () => {
   const { messages, addMessage, appendLocal, updateLastAssistant } = useMessages(activeConvId);
   const [isStreaming, setIsStreaming] = useState(false);
   const [showArtifacts, setShowArtifacts] = useState(false);
+  const [showAKB, setShowAKB] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const handleNewChat = useCallback(async () => {
@@ -102,11 +104,20 @@ const Workspace = () => {
 
       <div className="flex flex-1 flex-col">
         {/* Top bar */}
-        <div className="flex items-center justify-end border-b border-border px-4 py-2">
+        <div className="flex items-center justify-end gap-1 border-b border-border px-4 py-2">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setShowArtifacts(!showArtifacts)}
+            onClick={() => { setShowAKB(!showAKB); if (!showAKB) setShowArtifacts(false); }}
+            className="gap-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Database className="h-4 w-4" />
+            AKB
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setShowArtifacts(!showArtifacts); if (!showArtifacts) setShowAKB(false); }}
             className="gap-2 text-xs text-muted-foreground hover:text-foreground"
           >
             <PanelRight className="h-4 w-4" />
@@ -124,10 +135,17 @@ const Workspace = () => {
             />
           </div>
           {showArtifacts && (
-            <ArtifactPanel
-              conversationId={activeConvId}
-              onClose={() => setShowArtifacts(false)}
-            />
+            <div className="w-80 border-l border-border bg-card">
+              <ArtifactPanel
+                conversationId={activeConvId}
+                onClose={() => setShowArtifacts(false)}
+              />
+            </div>
+          )}
+          {showAKB && (
+            <div className="w-80 border-l border-border bg-card">
+              <AKBPanel conversationId={activeConvId} />
+            </div>
           )}
         </div>
       </div>

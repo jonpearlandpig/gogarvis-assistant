@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      akb_entries: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          id: string
+          source_conversation_id: string | null
+          source_type: Database["public"]["Enums"]["akb_source_type"]
+          telauthorium_id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          content: string
+          created_at?: string
+          id?: string
+          source_conversation_id?: string | null
+          source_type?: Database["public"]["Enums"]["akb_source_type"]
+          telauthorium_id: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          source_conversation_id?: string | null
+          source_type?: Database["public"]["Enums"]["akb_source_type"]
+          telauthorium_id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "akb_entries_source_conversation_id_fkey"
+            columns: ["source_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       artifacts: {
         Row: {
           content: string
@@ -108,6 +152,36 @@ export type Database = {
           },
         ]
       }
+      telauthorium_ledger: {
+        Row: {
+          action: string
+          actor: string
+          context: string | null
+          created_at: string
+          id: string
+          telauthorium_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          actor?: string
+          context?: string | null
+          created_at?: string
+          id?: string
+          telauthorium_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          actor?: string
+          context?: string | null
+          created_at?: string
+          id?: string
+          telauthorium_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -116,7 +190,7 @@ export type Database = {
       is_conversation_owner: { Args: { conv_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      akb_source_type: "human" | "decision_object"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -243,6 +317,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      akb_source_type: ["human", "decision_object"],
+    },
   },
 } as const
