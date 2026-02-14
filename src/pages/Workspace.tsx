@@ -21,9 +21,8 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAKBIntakeGate } from "@/hooks/useAKBIntakeGate";
 import { streamChat, type AKBMeta } from "@/lib/stream-chat";
 import { toast } from "sonner";
-import { PanelRight, Database, User, Hammer, Receipt } from "lucide-react";
+import { Hammer } from "lucide-react";
 import { buildReceiptReportArtifactSeed } from "@/lib/receiptsToArtifact";
-import { Button } from "@/components/ui/button";
 import { UOPBadge } from "@/components/profile/UOPBadge";
 import { runModuleDetection } from "@/lib/module-detection-client";
 import { computeJournalScore } from "@/lib/journal-signal";
@@ -56,20 +55,58 @@ const Workspace = () => {
   const [akbCoverage, setAKBCoverage] = useState<number>(0);
   const foundationLock = akbMode !== "full";
 
-  // ─── Intake gate: chat-only until first dataset ─────────
+  // ─── Intake gate ────────────────────────────────────────
   const gate = useAKBIntakeGate(user?.id || null, null);
 
-  // Auto-close builder if dataset disappears (e.g. sign out)
+  // ─── Explicit UI phases ─────────────────────────────────
+  const chatOnly = !gate.hasFirstDataset;
+  const builderOnly = gate.hasFirstDataset && foundationLock;
+  const workspaceUnlocked = gate.hasFirstDataset && !foundationLock;
+
+  // Auto-close builder if dataset disappears
   useEffect(() => {
-    if (!gate.hasFirstDataset) setShowAKBBuilder(false);
-  }, [gate.hasFirstDataset]);
+    if (chatOnly) setShowAKBBuilder(false);
+  }, [chatOnly]);
+
+  // Force-close panels when not unlocked
+  useEffect(() => {
+    if (!workspaceUnlocked) {
+      setShowProfile(false);
+      setShowAKB(false);
+      setShowArtifacts(false);
+    }
+  }, [workspaceUnlocked]);
 
   const openAKBBuilder = () => {
-    if (!gate.hasFirstDataset) {
+    if (chatOnly) {
       toast.message("Upload a file or add a quick note to begin.");
       return;
     }
-    setShowAKBBuilder((prev) => !prev);
+    if (!builderOnly) return;
+    setShowAKBBuilder((p) => !p);
+  };
+
+  const togglePanel = (panel: "profile" | "akb" | "artifacts") => {
+    if (!workspaceUnlocked) return;
+
+    if (panel === "artifacts" && akbMode !== "full") {
+      toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
+      return;
+    }
+
+    const next =
+      panel === "profile" ? !showProfile :
+      panel === "akb" ? !showAKB :
+      !showArtifacts;
+
+    setShowProfile(false);
+    setShowAKB(false);
+    setShowArtifacts(false);
+    if (!next) return;
+
+    if (panel === "profile") setShowProfile(true);
+    if (panel === "akb") setShowAKB(true);
+    if (panel === "artifacts") setShowArtifacts(true);
   };
 
   // ─── Progression state ──────────────────────────────────
@@ -106,14 +143,6 @@ const Workspace = () => {
     if (!workspaceRevealed) return;
     if (accountAgeDays >= 60) setShowSovereignRename(true);
   }, [workspaceRevealed, accountAgeDays]);
-
-  // Force-close locked panels during foundation lock
-  useEffect(() => {
-    if (!foundationLock) return;
-    setShowProfile(false);
-    setShowAKB(false);
-    setShowArtifacts(false);
-  }, [foundationLock]);
 
   // ─── Existing hooks ─────────────────────────────────────
   const {
@@ -211,35 +240,8 @@ const Workspace = () => {
     fetchVersions(a.id);
   };
 
-  const togglePanel = (panel: "profile" | "akb" | "artifacts") => {
-    if (foundationLock) return;
-
-    const artifactsAllowed = akbMode === "full";
-    if (panel === "artifacts" && !artifactsAllowed) {
-      toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
-      return;
-    }
-
-    const next =
-      panel === "profile" ? !showProfile :
-      panel === "akb" ? !showAKB :
-      !showArtifacts;
-
-    setShowProfile(false);
-    setShowAKB(false);
-    setShowArtifacts(false);
-    if (!next) return;
-
-    if (panel === "profile") setShowProfile(true);
-    if (panel === "akb") setShowAKB(true);
-    if (panel === "artifacts") setShowArtifacts(true);
-  };
-
-  const artifactsAllowed = akbMode === "full";
-
   const createReceiptsReportArtifact = useCallback(async () => {
-    if (!user?.id) return;
-    if (!artifactsAllowed) {
+    if (!user?.id || akbMode !== "full") {
       toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
       return;
     }
@@ -252,152 +254,144 @@ const Workspace = () => {
     } catch (err: any) {
       toast.error(err?.message || "Failed to build receipts report");
     }
-  }, [user?.id, artifactsAllowed, akbCoverage, createArtifact]);
+  }, [user?.id, akbMode, akbCoverage, createArtifact]);
 
   // ─── Render ─────────────────────────────────────────────
   return (
-    <div className="flex h-screen w-full bg-background">
-      {/* Conversation sidebar — only when fully unlocked */}
-      {!foundationLock && (
-        <ConversationSidebar
-          conversations={conversations}
-          activeId={activeConvId}
-          onSelect={setActiveConvId}
-          onCreate={handleNewChat}
-          onDelete={(id) => {
-            remove(id);
-            if (activeConvId === id) setActiveConvId(null);
-          }}
-          onRename={(id, title) => updateTitle(id, title)}
-        />
-      )}
+    <div className="flex h-screen w-full flex-col bg-background">
+      {/* ── TOP BAR ── */}
+      <div className="h-12 shrink-0 border-b border-border flex items-center justify-between px-3">
+        <div className="text-xs font-semibold tracking-wide text-foreground">GARVIS</div>
 
-      {/* Main area */}
-      <div className="flex flex-1 flex-col">
-        {/* Operator Mode Banner */}
-        <OperatorModeBanner
-          open={showOperatorBanner}
-          onClose={() => setShowOperatorBanner(false)}
-        />
+        {/* Hammer: ONLY in builderOnly phase */}
+        {builderOnly && (
+          <button
+            onClick={openAKBBuilder}
+            className={`flex items-center gap-2 text-xs px-2 py-1 rounded border border-border transition-colors ${
+              showAKBBuilder ? "bg-muted text-foreground" : "hover:bg-muted/40 text-muted-foreground"
+            }`}
+          >
+            <Hammer className="h-4 w-4" />
+            AKB Builder
+          </button>
+        )}
 
-        {/* Top bar */}
-        <div className="flex items-center justify-between border-b border-border px-4 py-2">
-          <span className="text-sm font-semibold text-foreground">GARVIS</span>
-
-          <div className="flex items-center gap-1">
-            {/* AKB Builder hammer — only after first dataset */}
-            {gate.hasFirstDataset && foundationLock && (
-              <Button
-                variant={showAKBBuilder ? "secondary" : "ghost"}
-                size="sm"
-                onClick={openAKBBuilder}
-                className="gap-2 text-xs text-muted-foreground hover:text-foreground"
-              >
-                <Hammer className="h-4 w-4" /> AKB Builder
-              </Button>
-            )}
-
-            {/* Full nav — only after graduation */}
-            {!foundationLock && (
-              <>
-                <UOPBadge
-                  version={uopVersion}
-                  onClick={() => togglePanel("profile")}
-                />
-                <Button variant="ghost" size="sm" onClick={() => togglePanel("profile")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
-                  <User className="h-4 w-4" /> Profile
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => togglePanel("akb")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
-                  <Database className="h-4 w-4" /> AKB
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => togglePanel("artifacts")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
-                  <PanelRight className="h-4 w-4" /> Artifacts
-                </Button>
-                <Button variant="ghost" size="sm" onClick={createReceiptsReportArtifact} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
-                  <Receipt className="h-4 w-4" /> Receipts Report
-                </Button>
-              </>
-            )}
+        {/* Full nav: ONLY when workspace unlocked */}
+        {workspaceUnlocked && (
+          <div className="flex items-center gap-3">
+            <UOPBadge version={uopVersion} onClick={() => togglePanel("profile")} />
+            <button onClick={() => togglePanel("profile")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+              Profile
+            </button>
+            <button onClick={() => togglePanel("akb")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+              AKB
+            </button>
+            <button onClick={() => togglePanel("artifacts")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+              Artifacts
+            </button>
+            <button onClick={createReceiptsReportArtifact} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+              Receipts Report
+            </button>
           </div>
-        </div>
+        )}
+      </div>
+
+      {/* Operator Mode Banner */}
+      <OperatorModeBanner
+        open={showOperatorBanner}
+        onClose={() => setShowOperatorBanner(false)}
+      />
+
+      {/* ── BODY ── */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left sidebar: ONLY after graduation */}
+        {workspaceUnlocked && (
+          <ConversationSidebar
+            conversations={conversations}
+            activeId={activeConvId}
+            onSelect={setActiveConvId}
+            onCreate={handleNewChat}
+            onDelete={(id) => {
+              remove(id);
+              if (activeConvId === id) setActiveConvId(null);
+            }}
+            onRename={(id, title) => updateTitle(id, title)}
+          />
+        )}
 
         {/* Main content */}
         <div className="flex flex-1 overflow-hidden">
-          <div className="flex flex-1 flex-col overflow-hidden">
+          {/* Chat: ALWAYS visible */}
+          <div className="flex-1 flex flex-col overflow-hidden">
             {user?.id && <ModuleNudge userId={user.id} />}
-            <div className="flex flex-1 overflow-hidden">
-              {/* Chat — always visible */}
-              <div className="flex-1 flex flex-col">
-                <ChatPanel
-                  messages={messages}
-                  isStreaming={isStreaming}
-                  onSend={handleSend}
-                  onStop={handleStop}
-                  onCreateArtifact={async (content) => {
-                    if (!artifactsAllowed) {
-                      toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
-                      return;
-                    }
-                    const title = content.slice(0, 50).replace(/[#*_\n]/g, "").trim() || "Untitled";
-                    await createArtifact(title, "text", content);
-                    setShowArtifacts(true);
-                    toast.success("Artifact created");
-                  }}
+            <ChatPanel
+              messages={messages}
+              isStreaming={isStreaming}
+              onSend={handleSend}
+              onStop={handleStop}
+              onCreateArtifact={async (content) => {
+                if (akbMode !== "full") {
+                  toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
+                  return;
+                }
+                const title = content.slice(0, 50).replace(/[#*_\n]/g, "").trim() || "Untitled";
+                await createArtifact(title, "text", content);
+                setShowArtifacts(true);
+                toast.success("Artifact created");
+              }}
+            />
+
+            {/* Intake nudge: ONLY before first dataset */}
+            {chatOnly && user?.id && (
+              <div className="border-t border-border px-4 py-3 text-center">
+                <p className="text-xs text-muted-foreground mb-2">
+                  Upload a file or add a quick note to begin building your AKB.
+                </p>
+                <ChatIntakeUpload
+                  userId={user.id}
+                  workspaceId={null}
+                  onDone={() => gate.refetch()}
                 />
-
-                {/* Intake nudge — only before first dataset */}
-                {!gate.hasFirstDataset && user?.id && (
-                  <div className="border-t border-border px-4 py-3 text-center">
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Upload a file or add a quick note to begin building your AKB.
-                    </p>
-                    <ChatIntakeUpload
-                      userId={user.id}
-                      workspaceId={null}
-                      onDone={() => gate.refetch()}
-                    />
-                  </div>
-                )}
               </div>
+            )}
+          </div>
 
-              {/* AKB Builder side panel — only after first dataset AND user clicked */}
-              {gate.hasFirstDataset && showAKBBuilder && foundationLock && (
-                <div className="w-[420px] border-l border-border">
-                  <AKBBuilderPanel workspaceId={null} />
+          {/* AKB Builder panel: ONLY in builderOnly + user clicked */}
+          {builderOnly && showAKBBuilder && (
+            <div className="w-[420px] border-l border-border">
+              <AKBBuilderPanel workspaceId={null} />
+            </div>
+          )}
+
+          {/* Unlocked panels */}
+          {workspaceUnlocked && (
+            <>
+              {showArtifacts && (
+                <ArtifactPanel
+                  artifacts={artifacts}
+                  versions={versions}
+                  onSelectArtifact={handleSelectArtifact}
+                  onCreateArtifact={createArtifact}
+                  onSaveVersion={saveNewVersion}
+                  onClose={() => setShowArtifacts(false)}
+                />
+              )}
+              {showAKB && (
+                <div className="w-80 border-l border-border bg-card">
+                  <AKBPanel conversationId={activeConvId} />
                 </div>
               )}
-
-              {/* Unlocked panels */}
-              {!foundationLock && (
-                <>
-                  {showArtifacts && (
-                    <ArtifactPanel
-                      artifacts={artifacts}
-                      versions={versions}
-                      onSelectArtifact={handleSelectArtifact}
-                      onCreateArtifact={createArtifact}
-                      onSaveVersion={saveNewVersion}
-                      onClose={() => setShowArtifacts(false)}
-                    />
-                  )}
-                  {showAKB && (
-                    <div className="w-80 border-l border-border bg-card">
-                      <AKBPanel conversationId={activeConvId} />
-                    </div>
-                  )}
-                  {showProfile && (
-                    <ProfilePanel
-                      version={uopVersion}
-                      profileName={profileName}
-                      onSave={async (cfg) => { await saveProfile(cfg); }}
-                      onRename={async (n) => { await renameProfile(n); }}
-                      onClose={() => setShowProfile(false)}
-                    />
-                  )}
-                </>
+              {showProfile && (
+                <ProfilePanel
+                  version={uopVersion}
+                  profileName={profileName}
+                  onSave={async (cfg) => { await saveProfile(cfg); }}
+                  onRename={async (n) => { await renameProfile(n); }}
+                  onClose={() => setShowProfile(false)}
+                />
               )}
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </div>
 
