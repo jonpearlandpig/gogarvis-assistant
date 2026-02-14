@@ -68,19 +68,24 @@ const Workspace = () => {
   const builderOnly = gate.hasFirstDataset && foundationLock;
   const workspaceUnlocked = gate.hasFirstDataset && !foundationLock;
 
-  // Auto-close builder if dataset disappears
+  // chatOnly: hide everything
   useEffect(() => {
-    if (chatOnly) setShowAKBBuilder(false);
-  }, [chatOnly]);
-
-  // Force-close panels when not unlocked
-  useEffect(() => {
-    if (!workspaceUnlocked) {
+    if (chatOnly) {
+      setShowAKBBuilder(false);
       setShowProfile(false);
       setShowAKB(false);
       setShowArtifacts(false);
     }
-  }, [workspaceUnlocked]);
+  }, [chatOnly]);
+
+  // builderOnly: hide everything except AKB Builder
+  useEffect(() => {
+    if (builderOnly) {
+      setShowProfile(false);
+      setShowAKB(false);
+      setShowArtifacts(false);
+    }
+  }, [builderOnly]);
 
   const openAKBBuilder = () => {
     if (chatOnly) {
