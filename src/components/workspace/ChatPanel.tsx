@@ -7,6 +7,8 @@ import ReactMarkdown from "react-markdown";
 import type { Msg } from "@/lib/stream-chat";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useChatUrlIntake } from "@/hooks/useChatUrlIntake";
+import { UrlIngestPrompt } from "@/components/chat/UrlIngestPrompt";
 
 interface Props {
   messages: (Msg & { id?: string })[];
@@ -14,12 +16,14 @@ interface Props {
   onSend: (text: string) => void;
   onStop: () => void;
   onCreateArtifact?: (content: string) => void;
+  onUrlIngested?: () => void;
 }
 
-export function ChatPanel({ messages, isStreaming, onSend, onStop, onCreateArtifact }: Props) {
+export function ChatPanel({ messages, isStreaming, onSend, onStop, onCreateArtifact, onUrlIngested }: Props) {
   const [input, setInput] = useState("");
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const urlIntake = useChatUrlIntake(onUrlIngested);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -128,12 +132,25 @@ export function ChatPanel({ messages, isStreaming, onSend, onStop, onCreateArtif
         </div>
       </ScrollArea>
 
+      {/* URL Ingest Prompt */}
+      {urlIntake.pendingUrl && (
+        <UrlIngestPrompt
+          url={urlIntake.pendingUrl}
+          busy={urlIntake.busy}
+          onConfirm={urlIntake.confirmIngest}
+          onDismiss={urlIntake.clear}
+        />
+      )}
+
       {/* Input */}
       <div className="border-t border-border p-4">
         <div className="mx-auto max-w-3xl flex gap-2">
           <Textarea
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              urlIntake.scan(e.target.value);
+            }}
             onKeyDown={handleKeyDown}
             placeholder="Go Garvis!"
             className="min-h-[44px] max-h-32 resize-none bg-muted border-border font-mono text-sm"

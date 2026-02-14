@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.module-detection]
 verify_jwt = false
+
+[functions.akb-url-ingest]
+verify_jwt = false
