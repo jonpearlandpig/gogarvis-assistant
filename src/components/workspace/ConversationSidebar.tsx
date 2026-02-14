@@ -1,4 +1,5 @@
-import { Plus, MessageSquare, Trash2, LogOut, Shield } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Plus, MessageSquare, Trash2, LogOut, Shield, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,10 +12,34 @@ interface Props {
   onSelect: (id: string) => void;
   onCreate: () => void;
   onDelete: (id: string) => void;
+  onRename?: (id: string, title: string) => void;
 }
 
-export function ConversationSidebar({ conversations, activeId, onSelect, onCreate, onDelete }: Props) {
+export function ConversationSidebar({ conversations, activeId, onSelect, onCreate, onDelete, onRename }: Props) {
   const { signOut, user } = useAuth();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingId && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editingId]);
+
+  const startRename = (c: Conversation, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setEditingId(c.id);
+    setEditValue(c.title);
+  };
+
+  const commitRename = () => {
+    if (editingId && editValue.trim() && onRename) {
+      onRename(editingId, editValue.trim());
+    }
+    setEditingId(null);
+  };
 
   return (
     <div className="flex h-full w-64 flex-col bg-sidebar border-r border-sidebar-border">
@@ -47,9 +72,31 @@ export function ConversationSidebar({ conversations, activeId, onSelect, onCreat
                   : "text-sidebar-foreground hover:bg-sidebar-accent/50"
               )}
               onClick={() => onSelect(c.id)}
+              onDoubleClick={() => startRename(c)}
             >
               <MessageSquare className="h-3.5 w-3.5 shrink-0 opacity-50" />
-              <span className="truncate flex-1 text-xs">{c.title}</span>
+              {editingId === c.id ? (
+                <input
+                  ref={inputRef}
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={commitRename}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitRename();
+                    if (e.key === "Escape") setEditingId(null);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex-1 text-xs bg-transparent border-b border-primary/50 outline-none py-0.5"
+                />
+              ) : (
+                <span className="truncate flex-1 text-xs">{c.title}</span>
+              )}
+              <button
+                onClick={(e) => { e.stopPropagation(); startRename(c, e); }}
+                className="opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Pencil className="h-3 w-3 text-muted-foreground hover:text-primary" />
+              </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onDelete(c.id); }}
                 className="opacity-0 group-hover:opacity-100 transition-opacity"
