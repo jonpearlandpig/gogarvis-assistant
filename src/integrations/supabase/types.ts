@@ -189,6 +189,7 @@ export type Database = {
     Functions: {
       gen_telauthorium_id: { Args: never; Returns: string }
       is_conversation_owner: { Args: { conv_id: string }; Returns: boolean }
+      sha256_hex: { Args: { t: string }; Returns: string }
     }
     Enums: {
       akb_source_type: "human" | "decision_object"
