@@ -4,24 +4,24 @@ import { ChatPanel } from "@/components/workspace/ChatPanel";
 import { ArtifactPanel } from "@/components/workspace/ArtifactPanel";
 import { AKBPanel } from "@/components/workspace/AKBPanel";
 import { ProfilePanel } from "@/components/workspace/ProfilePanel";
+import { AKBBuilderPanel } from "@/components/akb/AKBBuilderPanel";
 import {
   FoundationCompleteModal,
   WorkspaceRevealModal,
   OperatorModeBanner,
   SovereignRenameModal,
 } from "@/components/workspace/ProgressionModals";
-import { ModuleRail } from "@/components/modules/ModuleRail";
-import { ModuleHost } from "@/components/modules/ModuleHost";
 import { ModuleNudge } from "@/components/modules/ModuleNudge";
+import { ChatIntakeUpload } from "@/components/chat/ChatIntakeUpload";
 import { useConversations } from "@/hooks/useConversations";
 import { useMessages } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useArtifacts } from "@/hooks/useArtifacts";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { useModuleRail } from "@/hooks/useModuleRail";
+import { useAKBIntakeGate } from "@/hooks/useAKBIntakeGate";
 import { streamChat, type AKBMeta } from "@/lib/stream-chat";
 import { toast } from "sonner";
-import { PanelRight, Database, User, Receipt } from "lucide-react";
+import { PanelRight, Database, User, Hammer, Receipt } from "lucide-react";
 import { buildReceiptReportArtifactSeed } from "@/lib/receiptsToArtifact";
 import { Button } from "@/components/ui/button";
 import { UOPBadge } from "@/components/profile/UOPBadge";
@@ -48,6 +48,7 @@ const Workspace = () => {
   const [showArtifacts, setShowArtifacts] = useState(false);
   const [showAKB, setShowAKB] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showAKBBuilder, setShowAKBBuilder] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   // AKB soft-lock state
@@ -55,8 +56,21 @@ const Workspace = () => {
   const [akbCoverage, setAKBCoverage] = useState<number>(0);
   const foundationLock = akbMode !== "full";
 
-  // ─── Module rail ────────────────────────────────────────
-  const rail = useModuleRail(user?.id, null);
+  // ─── Intake gate: chat-only until first dataset ─────────
+  const gate = useAKBIntakeGate(user?.id || null, null);
+
+  // Auto-close builder if dataset disappears (e.g. sign out)
+  useEffect(() => {
+    if (!gate.hasFirstDataset) setShowAKBBuilder(false);
+  }, [gate.hasFirstDataset]);
+
+  const openAKBBuilder = () => {
+    if (!gate.hasFirstDataset) {
+      toast.message("Upload a file or add a quick note to begin.");
+      return;
+    }
+    setShowAKBBuilder((prev) => !prev);
+  };
 
   // ─── Progression state ──────────────────────────────────
   const [prevAKBMode, setPrevAKBMode] = useState<"locked" | "foundation" | "full">("locked");
@@ -243,13 +257,20 @@ const Workspace = () => {
   // ─── Render ─────────────────────────────────────────────
   return (
     <div className="flex h-screen w-full bg-background">
-      {/* Module Rail (left) */}
-      <ModuleRail
-        activeModules={rail.activeModules}
-        suggestedModules={rail.suggestedModules}
-        activeKey={rail.activeKey}
-        onSelect={(k) => rail.setActiveKey(k)}
-      />
+      {/* Conversation sidebar — only when fully unlocked */}
+      {!foundationLock && (
+        <ConversationSidebar
+          conversations={conversations}
+          activeId={activeConvId}
+          onSelect={setActiveConvId}
+          onCreate={handleNewChat}
+          onDelete={(id) => {
+            remove(id);
+            if (activeConvId === id) setActiveConvId(null);
+          }}
+          onRename={(id, title) => updateTitle(id, title)}
+        />
+      )}
 
       {/* Main area */}
       <div className="flex flex-1 flex-col">
@@ -259,51 +280,54 @@ const Workspace = () => {
           onClose={() => setShowOperatorBanner(false)}
         />
 
-        {/* Header bar — only visible when unlocked */}
-        {!foundationLock && (
-          <div className="flex items-center justify-between border-b border-border px-4 py-2">
-            <UOPBadge
-              version={uopVersion}
-              onClick={() => togglePanel("profile")}
-            />
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="sm" onClick={() => togglePanel("profile")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
-                <User className="h-4 w-4" /> Profile
+        {/* Top bar */}
+        <div className="flex items-center justify-between border-b border-border px-4 py-2">
+          <span className="text-sm font-semibold text-foreground">GARVIS</span>
+
+          <div className="flex items-center gap-1">
+            {/* AKB Builder hammer — only after first dataset */}
+            {gate.hasFirstDataset && foundationLock && (
+              <Button
+                variant={showAKBBuilder ? "secondary" : "ghost"}
+                size="sm"
+                onClick={openAKBBuilder}
+                className="gap-2 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <Hammer className="h-4 w-4" /> AKB Builder
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => togglePanel("akb")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
-                <Database className="h-4 w-4" /> AKB
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => togglePanel("artifacts")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
-                <PanelRight className="h-4 w-4" /> Artifacts
-              </Button>
-              <Button variant="ghost" size="sm" onClick={createReceiptsReportArtifact} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
-                <Receipt className="h-4 w-4" /> Receipts Report
-              </Button>
-            </div>
+            )}
+
+            {/* Full nav — only after graduation */}
+            {!foundationLock && (
+              <>
+                <UOPBadge
+                  version={uopVersion}
+                  onClick={() => togglePanel("profile")}
+                />
+                <Button variant="ghost" size="sm" onClick={() => togglePanel("profile")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
+                  <User className="h-4 w-4" /> Profile
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => togglePanel("akb")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
+                  <Database className="h-4 w-4" /> AKB
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => togglePanel("artifacts")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
+                  <PanelRight className="h-4 w-4" /> Artifacts
+                </Button>
+                <Button variant="ghost" size="sm" onClick={createReceiptsReportArtifact} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
+                  <Receipt className="h-4 w-4" /> Receipts Report
+                </Button>
+              </>
+            )}
           </div>
-        )}
+        </div>
 
+        {/* Main content */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Conversation sidebar — only when unlocked */}
-          {!foundationLock && (
-            <ConversationSidebar
-              conversations={conversations}
-              activeId={activeConvId}
-              onSelect={setActiveConvId}
-              onCreate={handleNewChat}
-              onDelete={(id) => {
-                remove(id);
-                if (activeConvId === id) setActiveConvId(null);
-              }}
-              onRename={(id, title) => updateTitle(id, title)}
-            />
-          )}
-
-          {/* Chat + module nudge */}
           <div className="flex flex-1 flex-col overflow-hidden">
             {user?.id && <ModuleNudge userId={user.id} />}
             <div className="flex flex-1 overflow-hidden">
-              <div className="flex-1">
+              {/* Chat — always visible */}
+              <div className="flex-1 flex flex-col">
                 <ChatPanel
                   messages={messages}
                   isStreaming={isStreaming}
@@ -320,16 +344,32 @@ const Workspace = () => {
                     toast.success("Artifact created");
                   }}
                 />
+
+                {/* Intake nudge — only before first dataset */}
+                {!gate.hasFirstDataset && user?.id && (
+                  <div className="border-t border-border px-4 py-3 text-center">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Upload a file or add a quick note to begin building your AKB.
+                    </p>
+                    <ChatIntakeUpload
+                      userId={user.id}
+                      workspaceId={null}
+                      onDone={() => gate.refetch()}
+                    />
+                  </div>
+                )}
               </div>
 
-              {/* Active module panel OR unlocked side panels */}
-              {foundationLock ? (
-                <ModuleHost activeKey={rail.activeKey} workspaceId={null} />
-              ) : (
+              {/* AKB Builder side panel — only after first dataset AND user clicked */}
+              {gate.hasFirstDataset && showAKBBuilder && foundationLock && (
+                <div className="w-[420px] border-l border-border">
+                  <AKBBuilderPanel workspaceId={null} />
+                </div>
+              )}
+
+              {/* Unlocked panels */}
+              {!foundationLock && (
                 <>
-                  {rail.activeKey && (
-                    <ModuleHost activeKey={rail.activeKey} workspaceId={activeConvId ?? null} />
-                  )}
                   {showArtifacts && (
                     <ArtifactPanel
                       artifacts={artifacts}
