@@ -2,6 +2,11 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type Msg = { role: "user" | "assistant"; content: string };
 
+export type AKBMeta = {
+  akbMode?: "locked" | "foundation" | "full";
+  akbCoverage?: number;
+};
+
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 export async function streamChat({
@@ -12,7 +17,7 @@ export async function streamChat({
 }: {
   messages: Msg[];
   onDelta: (deltaText: string) => void;
-  onDone: () => void;
+  onDone: (meta?: AKBMeta) => void;
   signal?: AbortSignal;
 }) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -28,6 +33,18 @@ export async function streamChat({
     body: JSON.stringify({ messages }),
     signal,
   });
+
+  // Read AKB headers immediately
+  const akbModeRaw = resp.headers.get("X-AKB-Mode");
+  const akbCoverageRaw = resp.headers.get("X-AKB-Coverage");
+  const meta: AKBMeta = {};
+  if (akbModeRaw === "locked" || akbModeRaw === "foundation" || akbModeRaw === "full") {
+    meta.akbMode = akbModeRaw;
+  }
+  if (akbCoverageRaw) {
+    const n = Number(akbCoverageRaw);
+    if (!Number.isNaN(n)) meta.akbCoverage = n;
+  }
 
   if (!resp.ok) {
     const data = await resp.json().catch(() => ({}));
@@ -89,5 +106,5 @@ export async function streamChat({
     }
   }
 
-  onDone();
+  onDone(meta);
 }

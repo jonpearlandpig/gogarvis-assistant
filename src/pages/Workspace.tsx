@@ -10,7 +10,7 @@ import { useMessages } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useArtifacts } from "@/hooks/useArtifacts";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { streamChat } from "@/lib/stream-chat";
+import { streamChat, type AKBMeta } from "@/lib/stream-chat";
 import { toast } from "sonner";
 import { PanelRight, Database, User, Hammer } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,10 @@ const Workspace = () => {
   const [showProfile, setShowProfile] = useState(false);
   const [showAKBBuilder, setShowAKBBuilder] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+
+  // AKB soft-lock state
+  const [akbMode, setAKBMode] = useState<"locked" | "foundation" | "full">("locked");
+  const [akbCoverage, setAKBCoverage] = useState<number>(0);
 
   const {
     artifacts,
@@ -79,8 +83,16 @@ const Workspace = () => {
             fullResponse += chunk;
             updateLastAssistant(fullResponse);
           },
-          onDone: async () => {
+          onDone: async (meta?: AKBMeta) => {
             setIsStreaming(false);
+
+            if (meta?.akbMode) {
+              setAKBMode(meta.akbMode);
+            }
+            if (typeof meta?.akbCoverage === "number" && !Number.isNaN(meta.akbCoverage)) {
+              setAKBCoverage(meta.akbCoverage);
+            }
+
             if (fullResponse && convId) {
               await addMessage("assistant", fullResponse);
             }
@@ -129,6 +141,9 @@ const Workspace = () => {
     if (panel === "akbBuilder") setShowAKBBuilder(true);
     if (panel === "artifacts") setShowArtifacts(true);
   };
+
+  // Artifacts gated until AKB full (80%+)
+  const artifactsAllowed = akbMode === "full";
 
   return (
     <div className="flex h-screen w-full bg-background">
@@ -198,6 +213,11 @@ const Workspace = () => {
               onSend={handleSend}
               onStop={handleStop}
               onCreateArtifact={async (content) => {
+                if (!artifactsAllowed) {
+                  toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
+                  togglePanel("akbBuilder");
+                  return;
+                }
                 const title = content.slice(0, 50).replace(/[#*_\n]/g, "").trim() || "Untitled";
                 await createArtifact(title, "text", content);
                 togglePanel("artifacts");
