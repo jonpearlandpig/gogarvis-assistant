@@ -57,6 +57,8 @@ const Workspace = () => {
   // AKB soft-lock state
   const [akbMode, setAKBMode] = useState<"locked" | "foundation" | "full">("locked");
   const [akbCoverage, setAKBCoverage] = useState<number>(0);
+  const [completedDomains, setCompletedDomains] = useState<string[]>([]);
+  const prevCompletedCount = useRef(0);
   const foundationLock = akbMode !== "full";
 
   // ─── Gates ──────────────────────────────────────────────
@@ -225,8 +227,12 @@ const Workspace = () => {
               setAKBCoverage(meta.akbCoverage);
             }
 
-            if (meta?.akbCoverage && meta.akbCoverage % 16 === 0) {
-              toast.success(`Domain Complete — AKB Coverage: ${meta.akbCoverage}%`);
+            if (Array.isArray(meta?.completedDomains)) {
+              setCompletedDomains(meta.completedDomains);
+              if (meta.completedDomains.length > prevCompletedCount.current) {
+                toast.success("Domain Complete");
+              }
+              prevCompletedCount.current = meta.completedDomains.length;
             }
 
             if (fullResponse && convId) {
@@ -295,7 +301,8 @@ const Workspace = () => {
 
         {gate.hasFirstDataset && (
           <AKBStatusBar
-            domainsComplete={Math.floor((akbCoverage / 100) * 6)}
+            domainsComplete={completedDomains.length}
+            coverage={akbCoverage}
             visible={true}
           />
         )}

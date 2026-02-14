@@ -5,6 +5,7 @@ export type Msg = { role: "user" | "assistant"; content: string };
 export type AKBMeta = {
   akbMode?: "locked" | "foundation" | "full";
   akbCoverage?: number;
+  completedDomains?: string[];
 };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
@@ -44,6 +45,10 @@ export async function streamChat({
   if (akbCoverageRaw) {
     const n = Number(akbCoverageRaw);
     if (!Number.isNaN(n)) meta.akbCoverage = n;
+  }
+  const domainsRaw = resp.headers.get("X-AKB-Completed-Domains");
+  if (domainsRaw) {
+    try { meta.completedDomains = JSON.parse(domainsRaw); } catch {}
   }
 
   if (!resp.ok) {
