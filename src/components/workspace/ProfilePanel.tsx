@@ -11,7 +11,9 @@ import type { UOPConfig, UOPVersion } from "@/hooks/useUserProfile";
 
 interface Props {
   version: UOPVersion | null;
+  profileName: string;
   onSave: (cfg: UOPConfig) => Promise<void>;
+  onRename: (name: string) => Promise<void>;
   onClose: () => void;
 }
 
@@ -20,9 +22,10 @@ const TONES = ["default", "direct", "academic", "casual", "strategic", "creative
 
 const DEFAULT_FOCUS = { systems: 20, creative: 20, architect: 20, business: 20, risk: 20 };
 
-export function ProfilePanel({ version, onSave, onClose }: Props) {
+export function ProfilePanel({ version, profileName, onSave, onRename, onClose }: Props) {
   const existing = version?.config_json;
 
+  const [name, setName] = useState(profileName);
   const [phaseBias, setPhaseBias] = useState(existing?.phase_bias || "");
   const [objective, setObjective] = useState(existing?.objective || "");
   const [tone, setTone] = useState(existing?.tone || "default");
@@ -32,6 +35,7 @@ export function ProfilePanel({ version, onSave, onClose }: Props) {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    setName(profileName);
     if (version?.config_json) {
       const c = version.config_json;
       setPhaseBias(c.phase_bias || "");
@@ -41,7 +45,7 @@ export function ProfilePanel({ version, onSave, onClose }: Props) {
       setNotes(c.advanced_notes || "");
       setFocus(c.garvis_lens || DEFAULT_FOCUS);
     }
-  }, [version]);
+  }, [version, profileName]);
 
   const setSlider = (key: keyof typeof focus, val: number) => {
     setFocus((prev) => ({ ...prev, [key]: val }));
@@ -51,6 +55,9 @@ export function ProfilePanel({ version, onSave, onClose }: Props) {
 
   const handleSave = async () => {
     setSaving(true);
+    if (name !== profileName) {
+      await onRename(name);
+    }
     await onSave({
       phase_bias: phaseBias || undefined,
       objective,
@@ -79,6 +86,17 @@ export function ProfilePanel({ version, onSave, onClose }: Props) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-5">
+        {/* Profile Name */}
+        <div className="space-y-1.5">
+          <Label className="text-xs">Profile Name</Label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Name this profile…"
+            className="h-8 text-xs"
+          />
+        </div>
+
         {/* Phase Bias */}
         <div className="space-y-1.5">
           <Label className="text-xs">Phase Bias</Label>

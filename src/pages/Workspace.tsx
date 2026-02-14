@@ -35,7 +35,7 @@ const Workspace = () => {
     fetchVersions,
   } = useArtifacts(user?.id, activeConvId);
 
-  const { version: uopVersion, saveProfile } = useUserProfile(user?.id || null);
+  const { version: uopVersion, profileName, saveProfile, renameProfile } = useUserProfile(user?.id || null);
 
   const handleNewChat = useCallback(async () => {
     const conv = await create();
@@ -190,7 +190,9 @@ const Workspace = () => {
           {showProfile && (
             <ProfilePanel
               version={uopVersion}
+              profileName={profileName}
               onSave={async (cfg) => { await saveProfile(cfg); }}
+              onRename={async (n) => { await renameProfile(n); }}
               onClose={() => setShowProfile(false)}
             />
           )}
