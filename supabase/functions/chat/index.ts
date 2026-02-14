@@ -370,6 +370,16 @@ Shape the response accordingly.
       );
     }
 
+    // Fetch completed domains from akb_domains table
+    const { data: domainRows } = await supabase
+      .from("akb_domains")
+      .select("domain_key, status")
+      .eq("user_id", user.id);
+
+    const completedDomains = (domainRows || [])
+      .filter((r: any) => r.status === "complete")
+      .map((r: any) => r.domain_key);
+
     // Pass AKB mode to client via headers
     const headers = new Headers({
       ...corsHeaders,
@@ -378,6 +388,7 @@ Shape the response accordingly.
       "Connection": "keep-alive",
       "X-AKB-Mode": akb.mode,
       "X-AKB-Coverage": String(akb.coveragePct),
+      "X-AKB-Completed-Domains": JSON.stringify(completedDomains),
     });
 
     return new Response(response.body, { headers });

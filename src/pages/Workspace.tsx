@@ -229,13 +229,12 @@ const Workspace = () => {
             }
 
             if (Array.isArray(meta?.completedDomains)) {
-              if (
-                prevCompletedCount.current > 0 &&
-                meta.completedDomains.length > prevCompletedCount.current
-              ) {
+              const newCount = meta.completedDomains.length;
+              if (prevCompletedCount.current > 0 && newCount > prevCompletedCount.current) {
                 toast.success("Domain Complete");
               }
-              prevCompletedCount.current = meta.completedDomains.length;
+              prevCompletedCount.current = newCount;
+              // Refetch DB-driven domain state so status bar updates
               akbDomains.refetch();
             }
 
