@@ -53,6 +53,7 @@ const Workspace = () => {
   // AKB soft-lock state
   const [akbMode, setAKBMode] = useState<"locked" | "foundation" | "full">("locked");
   const [akbCoverage, setAKBCoverage] = useState<number>(0);
+  const foundationLock = akbMode !== "full";
 
   // ─── Progression state ──────────────────────────────────
   const [prevAKBMode, setPrevAKBMode] = useState<"locked" | "foundation" | "full">("locked");
@@ -191,17 +192,30 @@ const Workspace = () => {
     fetchVersions(a.id);
   };
 
-  const closePanels = () => {
+  // Force-close locked panels during foundation lock
+  useEffect(() => {
+    if (!foundationLock) return;
     setShowProfile(false);
     setShowAKB(false);
     setShowArtifacts(false);
-    setShowAKBBuilder(false);
-  };
+    setShowAKBBuilder(true);
+  }, [foundationLock]);
 
   const togglePanel = (panel: "profile" | "akb" | "akbBuilder" | "artifacts") => {
+    if (foundationLock) {
+      if (panel !== "akbBuilder") return;
+      setShowProfile(false);
+      setShowAKB(false);
+      setShowArtifacts(false);
+      setShowAKBBuilder(true);
+      return;
+    }
+
     if (panel === "artifacts" && !artifactsAllowed) {
       toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
-      closePanels();
+      setShowProfile(false);
+      setShowAKB(false);
+      setShowArtifacts(false);
       setShowAKBBuilder(true);
       return;
     }
@@ -212,7 +226,10 @@ const Workspace = () => {
       panel === "akbBuilder" ? !showAKBBuilder :
       !showArtifacts;
 
-    closePanels();
+    setShowProfile(false);
+    setShowAKB(false);
+    setShowArtifacts(false);
+    setShowAKBBuilder(false);
     if (!next) return;
 
     if (panel === "profile") setShowProfile(true);
@@ -244,17 +261,19 @@ const Workspace = () => {
   // ─── Render ─────────────────────────────────────────────
   return (
     <div className="flex h-screen w-full bg-background">
-      <ConversationSidebar
-        conversations={conversations}
-        activeId={activeConvId}
-        onSelect={setActiveConvId}
-        onCreate={handleNewChat}
-        onDelete={(id) => {
-          remove(id);
-          if (activeConvId === id) setActiveConvId(null);
-        }}
-        onRename={(id, title) => updateTitle(id, title)}
-      />
+      {!foundationLock && (
+        <ConversationSidebar
+          conversations={conversations}
+          activeId={activeConvId}
+          onSelect={setActiveConvId}
+          onCreate={handleNewChat}
+          onDelete={(id) => {
+            remove(id);
+            if (activeConvId === id) setActiveConvId(null);
+          }}
+          onRename={(id, title) => updateTitle(id, title)}
+        />
+      )}
 
       <div className="flex flex-1 flex-col">
         {/* Operator Mode Banner */}
@@ -268,23 +287,25 @@ const Workspace = () => {
             version={uopVersion}
             onClick={() => togglePanel("profile")}
           />
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" onClick={() => togglePanel("profile")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
-              <User className="h-4 w-4" /> Profile
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => togglePanel("akb")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
-              <Database className="h-4 w-4" /> AKB
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => togglePanel("akbBuilder")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
-              <Hammer className="h-4 w-4" /> AKB Builder
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => togglePanel("artifacts")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
-              <PanelRight className="h-4 w-4" /> Artifacts
-            </Button>
-            <Button variant="ghost" size="sm" onClick={createReceiptsReportArtifact} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
-              <Receipt className="h-4 w-4" /> Receipts Report
-            </Button>
-          </div>
+          {!foundationLock && (
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="sm" onClick={() => togglePanel("profile")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
+                <User className="h-4 w-4" /> Profile
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => togglePanel("akb")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
+                <Database className="h-4 w-4" /> AKB
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => togglePanel("akbBuilder")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
+                <Hammer className="h-4 w-4" /> AKB Builder
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => togglePanel("artifacts")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
+                <PanelRight className="h-4 w-4" /> Artifacts
+              </Button>
+              <Button variant="ghost" size="sm" onClick={createReceiptsReportArtifact} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
+                <Receipt className="h-4 w-4" /> Receipts Report
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -309,32 +330,40 @@ const Workspace = () => {
                 }}
               />
             </div>
-            {showArtifacts && (
-              <ArtifactPanel
-                artifacts={artifacts}
-                versions={versions}
-                onSelectArtifact={handleSelectArtifact}
-                onCreateArtifact={createArtifact}
-                onSaveVersion={saveNewVersion}
-                onClose={() => setShowArtifacts(false)}
-              />
-            )}
-            {showAKB && (
-              <div className="w-80 border-l border-border bg-card">
-                <AKBPanel conversationId={activeConvId} />
+            {foundationLock ? (
+              <div className="w-[420px] border-l border-border">
+                <AKBBuilderPanel workspaceId={null} />
               </div>
-            )}
-            {showAKBBuilder && (
-              <AKBBuilderPanel workspaceId={activeConvId ?? null} />
-            )}
-            {showProfile && (
-              <ProfilePanel
-                version={uopVersion}
-                profileName={profileName}
-                onSave={async (cfg) => { await saveProfile(cfg); }}
-                onRename={async (n) => { await renameProfile(n); }}
-                onClose={() => setShowProfile(false)}
-              />
+            ) : (
+              <>
+                {showArtifacts && (
+                  <ArtifactPanel
+                    artifacts={artifacts}
+                    versions={versions}
+                    onSelectArtifact={handleSelectArtifact}
+                    onCreateArtifact={createArtifact}
+                    onSaveVersion={saveNewVersion}
+                    onClose={() => setShowArtifacts(false)}
+                  />
+                )}
+                {showAKB && (
+                  <div className="w-80 border-l border-border bg-card">
+                    <AKBPanel conversationId={activeConvId} />
+                  </div>
+                )}
+                {showAKBBuilder && (
+                  <AKBBuilderPanel workspaceId={activeConvId ?? null} />
+                )}
+                {showProfile && (
+                  <ProfilePanel
+                    version={uopVersion}
+                    profileName={profileName}
+                    onSave={async (cfg) => { await saveProfile(cfg); }}
+                    onRename={async (n) => { await renameProfile(n); }}
+                    onClose={() => setShowProfile(false)}
+                  />
+                )}
+              </>
             )}
           </div>
         </div>
