@@ -308,4 +308,104 @@ export const AKB_TEMPLATES: AKBTemplate[] = [
       },
     ],
   },
+  {
+    id: "food-beverage",
+    name: "Food & Beverage",
+    industry: "F&B / Hospitality",
+    description:
+      "Food safety, menu governance, sourcing, allergen controls, and operational compliance for restaurants, catering, and hospitality.",
+    icon: "🍽️",
+    entries: [
+      {
+        title: "Concept Overview & Brand Standards",
+        content:
+          "Define the F&B concept, brand identity, service style, and quality expectations.\n\n**Prompts:**\n- What is the culinary concept and target guest experience?\n- What brand standards govern presentation, plating, and service?\n- How do standards vary across locations or channels (dine-in, catering, retail)?",
+        category: "project",
+      },
+      {
+        title: "Menu Architecture & Recipe Rules",
+        content:
+          "Govern menu structure, item approval, and recipe change processes — without exposing proprietary quantities.\n\n**Prompts:**\n- What menu families exist (core, seasonal, LTO, catering, crew)?\n- What approval process governs new menu items or recipe changes?\n- What constraints limit menu complexity by location type or equipment?",
+        category: "decision",
+      },
+      {
+        title: "Ingredient Sourcing & Allergen Controls",
+        content:
+          "Define sourcing rules, approved suppliers, allergen tracking, and 'free-from' claim requirements.\n\n**Prompts:**\n- What allergens must be tracked and disclosed (Big 9, regional requirements)?\n- What controls prevent cross-contact for allergen-free claims?\n- What supplier qualification and traceability rules apply?",
+        category: "decision",
+      },
+      {
+        title: "Food Safety & Sanitation Protocols",
+        content:
+          "Establish non-negotiable food safety obligations — HACCP principles, personal hygiene, cleaning schedules, and incident reporting.\n\n**Prompts:**\n- What are the critical control points for your operation?\n- What personal hygiene and illness policies are enforced?\n- How are food safety incidents reported and escalated?",
+        category: "decision",
+      },
+      {
+        title: "Preparation & Holding Standards",
+        content:
+          "Define time/temperature control rules for cooking, cooling, reheating, and holding.\n\n**Prompts:**\n- What are the required cooking temperatures by protein type?\n- What are the maximum hold times and temperature ranges for hot and cold items?\n- What cooling and reheating procedures are enforced?",
+        category: "reference",
+      },
+      {
+        title: "Equipment Use & Maintenance Rules",
+        content:
+          "Govern safe equipment operation, calibration, preventive maintenance, and replacement triggers.\n\n**Prompts:**\n- What equipment requires daily calibration or temperature logging?\n- What preventive maintenance schedules are enforced?\n- What triggers equipment quarantine or replacement?",
+        category: "reference",
+      },
+      {
+        title: "Staffing Roles & Certification Requirements",
+        content:
+          "Define minimum staffing, required certifications (food handler, ServSafe, alcohol service), and training expectations.\n\n**Prompts:**\n- What food safety certifications are required by role?\n- What is the minimum staffing for safe service by daypart and volume?\n- What training is mandatory before a new hire works the line?",
+        category: "reference",
+      },
+      {
+        title: "Opening / Closing Procedures",
+        content:
+          "Establish daily opening and closing checklists — temperature checks, equipment verification, cleaning, and documentation.\n\n**Prompts:**\n- What temperature checks are required at opening?\n- What closing sanitation and security procedures are enforced?\n- Who signs off on opening/closing completion?",
+        category: "reference",
+      },
+      {
+        title: "Vendor & Supply Chain Rules",
+        content:
+          "Govern vendor qualification, ordering, receiving, and cold chain integrity.\n\n**Prompts:**\n- What receiving inspection criteria apply (temperature, condition, labeling)?\n- What happens when a delivery fails inspection?\n- How are vendor performance issues escalated?",
+        category: "reference",
+      },
+      {
+        title: "Waste, Recall & Incident Procedures",
+        content:
+          "Define waste tracking, product recall response, and food safety incident management.\n\n**Prompts:**\n- How is food waste tracked and categorized?\n- What is the recall response procedure and who leads it?\n- What triggers a full product hold or disposal?",
+        category: "decision",
+      },
+      {
+        title: "Regulatory & Health Code Compliance",
+        content:
+          "Catalog jurisdictional health codes, inspection requirements, and licensing obligations.\n\n**Prompts:**\n- What health department jurisdictions apply to each location?\n- What licenses and permits must be current (food service, alcohol, catering)?\n- How are inspection findings tracked and corrected?",
+        category: "reference",
+      },
+      {
+        title: "Quality Control & Guest Experience Standards",
+        content:
+          "Define quality checks, plating standards, service timing, and guest feedback handling.\n\n**Prompts:**\n- What quality checks are performed before service?\n- What are the target ticket times by service model?\n- How are guest complaints about food quality or safety handled?",
+        category: "project",
+      },
+      {
+        title: "Deal Breakers & Red Lines",
+        content:
+          "Enumerate absolute prohibitions — conditions under which F&B operations must stop or be revised.\n\n**Examples:**\n- Serving food without valid licenses or in facilities that can't maintain safe conditions\n- Offering 'free-from' claims where cross-contamination controls don't exist\n- Ignoring time/temperature rules in menu planning or logistics\n- Using sensitive personal data to target F&B offers unethically",
+        category: "decision",
+      },
+      {
+        title: "Templates & Checklists",
+        content:
+          "Maintain canonical templates for recurring F&B workflows.\n\n**Include:**\n- Daily opening / closing checklist\n- Food safety audit workflow\n- New menu item approval checklist\n- Staff certification tracking plan\n- Health inspection readiness checklist\n- Incident & recall response plan",
+        category: "reference",
+      },
+      {
+        title: "Audit & Inspection Cadence",
+        content:
+          "Define internal audit cycles, health inspection readiness, and governance update triggers.\n\n**Prompts:**\n- How often are internal food safety audits conducted?\n- What triggers an out-of-cycle audit or inspection prep?\n- How are audit findings tracked, corrected, and fed back into this AKB?",
+        category: "project",
+      },
+    ],
+  },
 ];
