@@ -8,21 +8,31 @@ export type AKBMeta = {
   completedDomains?: string[];
 };
 
+export type ScopeContract = {
+  mode: "home" | "project";
+  project_id: string | null;
+  cross_project_allowed: boolean;
+};
+
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 export async function streamChat({
   messages,
+  scope,
   onDelta,
   onDone,
   signal,
 }: {
   messages: Msg[];
+  scope?: ScopeContract;
   onDelta: (deltaText: string) => void;
   onDone: (meta?: AKBMeta) => void;
   signal?: AbortSignal;
 }) {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
+
+  const scopePayload: ScopeContract = scope || { mode: "home", project_id: null, cross_project_allowed: true };
 
   const resp = await fetch(CHAT_URL, {
     method: "POST",
@@ -31,7 +41,7 @@ export async function streamChat({
       Authorization: `Bearer ${token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     },
-    body: JSON.stringify({ messages }),
+    body: JSON.stringify({ messages, scope: scopePayload }),
     signal,
   });
 
