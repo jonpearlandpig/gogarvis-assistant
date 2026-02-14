@@ -4,28 +4,29 @@ import { ChatPanel } from "@/components/workspace/ChatPanel";
 import { ArtifactPanel } from "@/components/workspace/ArtifactPanel";
 import { AKBPanel } from "@/components/workspace/AKBPanel";
 import { ProfilePanel } from "@/components/workspace/ProfilePanel";
-import { AKBBuilderPanel } from "@/components/akb/AKBBuilderPanel";
 import {
   FoundationCompleteModal,
   WorkspaceRevealModal,
   OperatorModeBanner,
   SovereignRenameModal,
 } from "@/components/workspace/ProgressionModals";
+import { ModuleRail } from "@/components/modules/ModuleRail";
+import { ModuleHost } from "@/components/modules/ModuleHost";
+import { ModuleNudge } from "@/components/modules/ModuleNudge";
 import { useConversations } from "@/hooks/useConversations";
 import { useMessages } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useArtifacts } from "@/hooks/useArtifacts";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useModuleRail } from "@/hooks/useModuleRail";
 import { streamChat, type AKBMeta } from "@/lib/stream-chat";
-import { GARVIS_UI } from "@/lib/garvis-ui-strings";
 import { toast } from "sonner";
-import { PanelRight, Database, User, Hammer, Receipt } from "lucide-react";
+import { PanelRight, Database, User, Receipt } from "lucide-react";
 import { buildReceiptReportArtifactSeed } from "@/lib/receiptsToArtifact";
 import { Button } from "@/components/ui/button";
 import { UOPBadge } from "@/components/profile/UOPBadge";
 import { runModuleDetection } from "@/lib/module-detection-client";
 import { computeJournalScore } from "@/lib/journal-signal";
-import { ModuleNudge } from "@/components/modules/ModuleNudge";
 
 // ─── Helpers ──────────────────────────────────────────────
 const daysBetween = (a: Date, b: Date) =>
@@ -47,13 +48,15 @@ const Workspace = () => {
   const [showArtifacts, setShowArtifacts] = useState(false);
   const [showAKB, setShowAKB] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [showAKBBuilder, setShowAKBBuilder] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   // AKB soft-lock state
   const [akbMode, setAKBMode] = useState<"locked" | "foundation" | "full">("locked");
   const [akbCoverage, setAKBCoverage] = useState<number>(0);
   const foundationLock = akbMode !== "full";
+
+  // ─── Module rail ────────────────────────────────────────
+  const rail = useModuleRail(user?.id, null);
 
   // ─── Progression state ──────────────────────────────────
   const [prevAKBMode, setPrevAKBMode] = useState<"locked" | "foundation" | "full">("locked");
@@ -73,7 +76,6 @@ const Workspace = () => {
     return Math.max(0, daysBetween(new Date(), accountCreatedAt));
   }, [accountCreatedAt]);
 
-  // Trigger foundation-complete when AKB first hits "full"
   useEffect(() => {
     if (prevAKBMode !== "full" && akbMode === "full" && !workspaceRevealed) {
       setShowFoundationComplete(true);
@@ -81,17 +83,23 @@ const Workspace = () => {
     setPrevAKBMode(akbMode);
   }, [akbMode, prevAKBMode, workspaceRevealed]);
 
-  // Operator mode: 30+ days
   useEffect(() => {
     if (!workspaceRevealed) return;
     if (accountAgeDays >= 30) setShowOperatorBanner(true);
   }, [workspaceRevealed, accountAgeDays]);
 
-  // Sovereign mode: 60+ days
   useEffect(() => {
     if (!workspaceRevealed) return;
     if (accountAgeDays >= 60) setShowSovereignRename(true);
   }, [workspaceRevealed, accountAgeDays]);
+
+  // Force-close locked panels during foundation lock
+  useEffect(() => {
+    if (!foundationLock) return;
+    setShowProfile(false);
+    setShowAKB(false);
+    setShowArtifacts(false);
+  }, [foundationLock]);
 
   // ─── Existing hooks ─────────────────────────────────────
   const {
@@ -125,7 +133,6 @@ const Workspace = () => {
       appendLocal({ role: "user", content: text });
       await addMessage("user", text);
 
-      // Fire-and-forget journal detection
       const journalScore = computeJournalScore(text);
       if (journalScore >= 0.75) {
         runModuleDetection({
@@ -159,9 +166,7 @@ const Workspace = () => {
           onDone: async (meta?: AKBMeta) => {
             setIsStreaming(false);
 
-            if (meta?.akbMode) {
-              setAKBMode(meta.akbMode);
-            }
+            if (meta?.akbMode) setAKBMode(meta.akbMode);
             if (typeof meta?.akbCoverage === "number" && !Number.isNaN(meta.akbCoverage)) {
               setAKBCoverage(meta.akbCoverage);
             }
@@ -192,49 +197,27 @@ const Workspace = () => {
     fetchVersions(a.id);
   };
 
-  // Force-close locked panels during foundation lock
-  useEffect(() => {
-    if (!foundationLock) return;
-    setShowProfile(false);
-    setShowAKB(false);
-    setShowArtifacts(false);
-    setShowAKBBuilder(true);
-  }, [foundationLock]);
+  const togglePanel = (panel: "profile" | "akb" | "artifacts") => {
+    if (foundationLock) return;
 
-  const togglePanel = (panel: "profile" | "akb" | "akbBuilder" | "artifacts") => {
-    if (foundationLock) {
-      if (panel !== "akbBuilder") return;
-      setShowProfile(false);
-      setShowAKB(false);
-      setShowArtifacts(false);
-      setShowAKBBuilder(true);
-      return;
-    }
-
+    const artifactsAllowed = akbMode === "full";
     if (panel === "artifacts" && !artifactsAllowed) {
       toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
-      setShowProfile(false);
-      setShowAKB(false);
-      setShowArtifacts(false);
-      setShowAKBBuilder(true);
       return;
     }
 
     const next =
       panel === "profile" ? !showProfile :
       panel === "akb" ? !showAKB :
-      panel === "akbBuilder" ? !showAKBBuilder :
       !showArtifacts;
 
     setShowProfile(false);
     setShowAKB(false);
     setShowArtifacts(false);
-    setShowAKBBuilder(false);
     if (!next) return;
 
     if (panel === "profile") setShowProfile(true);
     if (panel === "akb") setShowAKB(true);
-    if (panel === "akbBuilder") setShowAKBBuilder(true);
     if (panel === "artifacts") setShowArtifacts(true);
   };
 
@@ -244,7 +227,6 @@ const Workspace = () => {
     if (!user?.id) return;
     if (!artifactsAllowed) {
       toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
-      togglePanel("akbBuilder");
       return;
     }
     try {
@@ -252,29 +234,24 @@ const Workspace = () => {
       const { title, seed, rowsCount } = await buildReceiptReportArtifactSeed(filters);
       await createArtifact(title, "csv", seed);
       toast.success(`Artifact created: ${rowsCount} rows`);
-      togglePanel("artifacts");
+      setShowArtifacts(true);
     } catch (err: any) {
       toast.error(err?.message || "Failed to build receipts report");
     }
-  }, [user?.id, artifactsAllowed, akbCoverage, createArtifact, togglePanel]);
+  }, [user?.id, artifactsAllowed, akbCoverage, createArtifact]);
 
   // ─── Render ─────────────────────────────────────────────
   return (
     <div className="flex h-screen w-full bg-background">
-      {!foundationLock && (
-        <ConversationSidebar
-          conversations={conversations}
-          activeId={activeConvId}
-          onSelect={setActiveConvId}
-          onCreate={handleNewChat}
-          onDelete={(id) => {
-            remove(id);
-            if (activeConvId === id) setActiveConvId(null);
-          }}
-          onRename={(id, title) => updateTitle(id, title)}
-        />
-      )}
+      {/* Module Rail (left) */}
+      <ModuleRail
+        activeModules={rail.activeModules}
+        suggestedModules={rail.suggestedModules}
+        activeKey={rail.activeKey}
+        onSelect={(k) => rail.setActiveKey(k)}
+      />
 
+      {/* Main area */}
       <div className="flex flex-1 flex-col">
         {/* Operator Mode Banner */}
         <OperatorModeBanner
@@ -282,21 +259,19 @@ const Workspace = () => {
           onClose={() => setShowOperatorBanner(false)}
         />
 
-        <div className="flex items-center justify-between border-b border-border px-4 py-2">
-          <UOPBadge
-            version={uopVersion}
-            onClick={() => togglePanel("profile")}
-          />
-          {!foundationLock && (
+        {/* Header bar — only visible when unlocked */}
+        {!foundationLock && (
+          <div className="flex items-center justify-between border-b border-border px-4 py-2">
+            <UOPBadge
+              version={uopVersion}
+              onClick={() => togglePanel("profile")}
+            />
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="sm" onClick={() => togglePanel("profile")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
                 <User className="h-4 w-4" /> Profile
               </Button>
               <Button variant="ghost" size="sm" onClick={() => togglePanel("akb")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
                 <Database className="h-4 w-4" /> AKB
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => togglePanel("akbBuilder")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
-                <Hammer className="h-4 w-4" /> AKB Builder
               </Button>
               <Button variant="ghost" size="sm" onClick={() => togglePanel("artifacts")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
                 <PanelRight className="h-4 w-4" /> Artifacts
@@ -305,66 +280,83 @@ const Workspace = () => {
                 <Receipt className="h-4 w-4" /> Receipts Report
               </Button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        <div className="flex flex-1 flex-col overflow-hidden">
-          {user?.id && <ModuleNudge userId={user.id} />}
-          <div className="flex flex-1 overflow-hidden">
-            <div className="flex-1">
-              <ChatPanel
-                messages={messages}
-                isStreaming={isStreaming}
-                onSend={handleSend}
-                onStop={handleStop}
-                onCreateArtifact={async (content) => {
-                  if (!artifactsAllowed) {
-                    toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
-                    togglePanel("akbBuilder");
-                    return;
-                  }
-                  const title = content.slice(0, 50).replace(/[#*_\n]/g, "").trim() || "Untitled";
-                  await createArtifact(title, "text", content);
-                  togglePanel("artifacts");
-                  toast.success("Artifact created");
-                }}
-              />
-            </div>
-            {foundationLock ? (
-              <div className="w-[420px] border-l border-border">
-                <AKBBuilderPanel workspaceId={null} />
+        <div className="flex flex-1 overflow-hidden">
+          {/* Conversation sidebar — only when unlocked */}
+          {!foundationLock && (
+            <ConversationSidebar
+              conversations={conversations}
+              activeId={activeConvId}
+              onSelect={setActiveConvId}
+              onCreate={handleNewChat}
+              onDelete={(id) => {
+                remove(id);
+                if (activeConvId === id) setActiveConvId(null);
+              }}
+              onRename={(id, title) => updateTitle(id, title)}
+            />
+          )}
+
+          {/* Chat + module nudge */}
+          <div className="flex flex-1 flex-col overflow-hidden">
+            {user?.id && <ModuleNudge userId={user.id} />}
+            <div className="flex flex-1 overflow-hidden">
+              <div className="flex-1">
+                <ChatPanel
+                  messages={messages}
+                  isStreaming={isStreaming}
+                  onSend={handleSend}
+                  onStop={handleStop}
+                  onCreateArtifact={async (content) => {
+                    if (!artifactsAllowed) {
+                      toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
+                      return;
+                    }
+                    const title = content.slice(0, 50).replace(/[#*_\n]/g, "").trim() || "Untitled";
+                    await createArtifact(title, "text", content);
+                    setShowArtifacts(true);
+                    toast.success("Artifact created");
+                  }}
+                />
               </div>
-            ) : (
-              <>
-                {showArtifacts && (
-                  <ArtifactPanel
-                    artifacts={artifacts}
-                    versions={versions}
-                    onSelectArtifact={handleSelectArtifact}
-                    onCreateArtifact={createArtifact}
-                    onSaveVersion={saveNewVersion}
-                    onClose={() => setShowArtifacts(false)}
-                  />
-                )}
-                {showAKB && (
-                  <div className="w-80 border-l border-border bg-card">
-                    <AKBPanel conversationId={activeConvId} />
-                  </div>
-                )}
-                {showAKBBuilder && (
-                  <AKBBuilderPanel workspaceId={activeConvId ?? null} />
-                )}
-                {showProfile && (
-                  <ProfilePanel
-                    version={uopVersion}
-                    profileName={profileName}
-                    onSave={async (cfg) => { await saveProfile(cfg); }}
-                    onRename={async (n) => { await renameProfile(n); }}
-                    onClose={() => setShowProfile(false)}
-                  />
-                )}
-              </>
-            )}
+
+              {/* Active module panel OR unlocked side panels */}
+              {foundationLock ? (
+                <ModuleHost activeKey={rail.activeKey} workspaceId={null} />
+              ) : (
+                <>
+                  {rail.activeKey && (
+                    <ModuleHost activeKey={rail.activeKey} workspaceId={activeConvId ?? null} />
+                  )}
+                  {showArtifacts && (
+                    <ArtifactPanel
+                      artifacts={artifacts}
+                      versions={versions}
+                      onSelectArtifact={handleSelectArtifact}
+                      onCreateArtifact={createArtifact}
+                      onSaveVersion={saveNewVersion}
+                      onClose={() => setShowArtifacts(false)}
+                    />
+                  )}
+                  {showAKB && (
+                    <div className="w-80 border-l border-border bg-card">
+                      <AKBPanel conversationId={activeConvId} />
+                    </div>
+                  )}
+                  {showProfile && (
+                    <ProfilePanel
+                      version={uopVersion}
+                      profileName={profileName}
+                      onSave={async (cfg) => { await saveProfile(cfg); }}
+                      onRename={async (n) => { await renameProfile(n); }}
+                      onClose={() => setShowProfile(false)}
+                    />
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
