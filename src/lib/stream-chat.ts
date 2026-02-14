@@ -90,6 +90,12 @@ export async function streamChat({
     throw new Error(data.error || `Request failed (${resp.status})`);
   }
 
+  const ct = resp.headers.get("content-type") || "";
+  if (!ct.includes("text/event-stream")) {
+    const t = await resp.text().catch(() => "");
+    throw new Error(t || "Unexpected response type");
+  }
+
   if (!resp.body) throw new Error("No response body");
 
   const reader = resp.body.getReader();
