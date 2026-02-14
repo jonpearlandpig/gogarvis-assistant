@@ -1,3 +1,5 @@
+import garvisLogo from "@/assets/garvis_logo_white.png";
+
 type Props = {
   open: boolean;
   onChoose: (level: "getting_started" | "already_building") => void;
@@ -9,11 +11,14 @@ export function EntryLevelGate({ open, onChoose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95">
       <div className="w-full max-w-md space-y-6 px-6">
+        <div className="flex justify-center mb-2">
+          <img src={garvisLogo} alt="goGARVIS" className="h-10" />
+        </div>
         <h1 className="text-xl font-semibold text-foreground text-center">
           Choose your entry level
         </h1>
         <p className="text-xs text-muted-foreground text-center">
-          GARVIS will lift the learner and launch the leader.
+          Lift the learner. Launch the leader.
         </p>
 
         <div className="space-y-3">

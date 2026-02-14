@@ -28,6 +28,7 @@ import { buildReceiptReportArtifactSeed } from "@/lib/receiptsToArtifact";
 import { UOPBadge } from "@/components/profile/UOPBadge";
 import { runModuleDetection } from "@/lib/module-detection-client";
 import { computeJournalScore } from "@/lib/journal-signal";
+import garvisLogo from "@/assets/garvis_logo_white.png";
 
 // ─── Helpers ──────────────────────────────────────────────
 const daysBetween = (a: Date, b: Date) =>
@@ -280,7 +281,7 @@ const Workspace = () => {
 
       {/* ── TOP BAR ── */}
       <div className="h-12 shrink-0 border-b border-border flex items-center justify-between px-3">
-        <div className="text-xs font-semibold tracking-wide text-foreground">GARVIS</div>
+        <img src={garvisLogo} alt="goGARVIS" className="h-7" />
 
         {builderOnly && (
           <button
