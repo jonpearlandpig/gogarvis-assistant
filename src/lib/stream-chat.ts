@@ -55,54 +55,41 @@ export async function streamChat({
 
   const reader = resp.body.getReader();
   const decoder = new TextDecoder();
-  let textBuffer = "";
-  let streamDone = false;
+  let buffer = "";
 
-  while (!streamDone) {
+  while (true) {
     const { done, value } = await reader.read();
     if (done) break;
-    textBuffer += decoder.decode(value, { stream: true });
 
-    let newlineIndex: number;
-    while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-      let line = textBuffer.slice(0, newlineIndex);
-      textBuffer = textBuffer.slice(newlineIndex + 1);
+    buffer += decoder.decode(value, { stream: true });
 
-      if (line.endsWith("\r")) line = line.slice(0, -1);
-      if (line.startsWith(":") || line.trim() === "") continue;
-      if (!line.startsWith("data: ")) continue;
+    let idx;
+    while ((idx = buffer.indexOf("\n\n")) !== -1) {
+      const event = buffer.slice(0, idx);
+      buffer = buffer.slice(idx + 2);
 
-      const jsonStr = line.slice(6).trim();
-      if (jsonStr === "[DONE]") {
-        streamDone = true;
-        break;
+      const dataLines = event
+        .split("\n")
+        .map(l => l.replace(/\r$/, ""))
+        .filter(l => l.startsWith("data:"))
+        .map(l => l.slice(5).trim());
+
+      if (dataLines.length === 0) continue;
+
+      const data = dataLines.join("\n");
+
+      if (data === "[DONE]") {
+        onDone(meta);
+        return;
       }
 
       try {
-        const parsed = JSON.parse(jsonStr);
-        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        const parsed = JSON.parse(data);
+        const content = parsed.choices?.[0]?.delta?.content;
         if (content) onDelta(content);
       } catch {
-        textBuffer = line + "\n" + textBuffer;
-        break;
+        // ignore malformed partial chunks
       }
-    }
-  }
-
-  // Final flush
-  if (textBuffer.trim()) {
-    for (let raw of textBuffer.split("\n")) {
-      if (!raw) continue;
-      if (raw.endsWith("\r")) raw = raw.slice(0, -1);
-      if (raw.startsWith(":") || raw.trim() === "") continue;
-      if (!raw.startsWith("data: ")) continue;
-      const jsonStr = raw.slice(6).trim();
-      if (jsonStr === "[DONE]") continue;
-      try {
-        const parsed = JSON.parse(jsonStr);
-        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-        if (content) onDelta(content);
-      } catch { /* ignore */ }
     }
   }
 

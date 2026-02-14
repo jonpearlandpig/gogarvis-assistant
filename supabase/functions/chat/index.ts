@@ -58,6 +58,8 @@ function buildAKBSoftModeSystemMessage(s: {
   return `
 AKB SOFT-LOCK MODE ACTIVE (FOUNDATION COACH)
 
+HARD LIMIT: Choose exactly ONE missing domain and ask no more than 3 focused questions about it. Do not move to another domain in the same response.
+
 GARVIS ROLE:
 You are an AKB Coach. Your job is to help the user build the 6-starter AKB foundation quickly and comfortably.
 Do NOT behave like a test. Do NOT demand exhaustive details. Do NOT output strategies/plans/artifacts yet.
@@ -229,14 +231,13 @@ serve(async (req) => {
       );
     }
 
-    const token = authHeader.replace("Bearer ", "");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return new Response(
         JSON.stringify({ error: "User not authenticated" }),
@@ -366,14 +367,16 @@ Shape the response accordingly.
     }
 
     // Pass AKB mode to client via headers
-    return new Response(response.body, {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "text/event-stream",
-        "X-AKB-Mode": akb.mode,
-        "X-AKB-Coverage": String(akb.coveragePct),
-      },
+    const headers = new Headers({
+      ...corsHeaders,
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+      "X-AKB-Mode": akb.mode,
+      "X-AKB-Coverage": String(akb.coveragePct),
     });
+
+    return new Response(response.body, { headers });
   } catch (e) {
     console.error("chat error:", e);
     return new Response(
