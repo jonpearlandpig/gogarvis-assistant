@@ -319,6 +319,36 @@ serve(async (req) => {
     }
 
     // ===========================================
+    // HARD SCOPE BOUNDARY
+    // ===========================================
+    const latestUserMessage =
+      messages?.filter((m: any) => m.role === "user").slice(-1)[0]?.content || "";
+
+    const crossProjectIntent =
+      /other project|another deal|compare|across projects|pull from/i.test(
+        latestUserMessage
+      );
+
+    if (scope.mode === "project" && crossProjectIntent) {
+      return new Response(
+        JSON.stringify({
+          ui_action: "not_here",
+          reason: "cross_project_request",
+          message:
+            "This deal is not in the current project. Do you want to check elsewhere?",
+        }),
+        {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+            "X-UI-ACTION": "not_here",
+          },
+        }
+      );
+    }
+
+    // ===========================================
     // SCOPED AKB: Canonical + Project context
     // ===========================================
     let canonical: any = null;
@@ -347,7 +377,19 @@ serve(async (req) => {
         }, {});
       }
 
-      merged = { ...(canonical || {}), ...(projectOverlay || {}) };
+      // Governance keys are always canonical (immutable)
+      const governance = {
+        tone_profile: canonical?.tone_profile,
+        communication_style: canonical?.communication_style,
+        decision_philosophy: canonical?.decision_philosophy,
+        deal_breakers: canonical?.deal_breakers,
+        strategic_intent: canonical?.strategic_intent,
+      };
+
+      merged = {
+        ...governance,
+        ...(projectOverlay || {}),
+      };
     } catch (e) {
       console.error("Scoped AKB fetch failed:", e);
     }
