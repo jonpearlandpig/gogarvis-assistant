@@ -5,6 +5,7 @@ import { ArtifactPanel } from "@/components/workspace/ArtifactPanel";
 import { AKBPanel } from "@/components/workspace/AKBPanel";
 import { ProfilePanel } from "@/components/workspace/ProfilePanel";
 import { AKBBuilderPanel } from "@/components/akb/AKBBuilderPanel";
+import { AKBBuildHero } from "@/components/workspace/AKBBuildHero";
 import {
   FoundationCompleteModal,
   WorkspaceRevealModal,
@@ -366,28 +367,39 @@ const Workspace = () => {
         )}
 
         <div className="flex flex-1 overflow-hidden">
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {user?.id && <ModuleNudge userId={user.id} />}
-            <ChatPanel
-              messages={messages}
+          {/* Builder-only hero view: centered logo + input when no conversation yet */}
+          {builderOnly && messages.length === 0 && !showAKBBuilder ? (
+            <AKBBuildHero
               isStreaming={isStreaming}
               onSend={handleSend}
-              onStop={handleStop}
-              onUrlIngested={() => gate.refetch()}
               userId={user?.id}
               workspaceId={null}
-              onCreateArtifact={async (content) => {
-                if (akbMode !== "full") {
-                  toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
-                  return;
-                }
-                const title = content.slice(0, 50).replace(/[#*_\n]/g, "").trim() || "Untitled";
-                await createArtifact(title, "text", content);
-                setShowArtifacts(true);
-                toast.success("Artifact created");
-              }}
+              onFilesUploaded={() => gate.refetch()}
             />
-          </div>
+          ) : (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {user?.id && <ModuleNudge userId={user.id} />}
+              <ChatPanel
+                messages={messages}
+                isStreaming={isStreaming}
+                onSend={handleSend}
+                onStop={handleStop}
+                onUrlIngested={() => gate.refetch()}
+                userId={user?.id}
+                workspaceId={null}
+                onCreateArtifact={async (content) => {
+                  if (akbMode !== "full") {
+                    toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
+                    return;
+                  }
+                  const title = content.slice(0, 50).replace(/[#*_\n]/g, "").trim() || "Untitled";
+                  await createArtifact(title, "text", content);
+                  setShowArtifacts(true);
+                  toast.success("Artifact created");
+                }}
+              />
+            </div>
+          )}
 
           {builderOnly && showAKBBuilder && (
             <div className="w-[420px] border-l border-border">
