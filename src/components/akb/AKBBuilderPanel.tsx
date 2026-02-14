@@ -207,7 +207,7 @@ export function AKBBuilderPanel({
 
           <ScrollArea className="max-h-[420px]">
             <div className="space-y-1">
-              {akb.drafts.map((d) => (
+              {akb.drafts.filter((d) => d.status !== "published").map((d) => (
                 <div key={d.id} className="border border-border rounded p-2">
                   <div className="flex items-center justify-between">
                     <div className="text-xs font-mono text-foreground">
