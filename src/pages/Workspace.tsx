@@ -129,6 +129,7 @@ const Workspace = () => {
   const togglePanel = (panel: "profile" | "akb" | "akbBuilder" | "artifacts") => {
     if (panel === "artifacts" && !artifactsAllowed) {
       toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
+      closePanels();
       setShowAKBBuilder(true);
       return;
     }
