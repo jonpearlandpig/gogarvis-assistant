@@ -14,6 +14,120 @@ export type Database = {
   }
   public: {
     Tables: {
+      akb_canon: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          telauthorium_id: string
+          user_id: string
+          value_json: Json
+          version_number: number
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          telauthorium_id: string
+          user_id: string
+          value_json: Json
+          version_number: number
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          telauthorium_id?: string
+          user_id?: string
+          value_json?: Json
+          version_number?: number
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
+      akb_conflicts: {
+        Row: {
+          a_ref: Json
+          b_ref: Json
+          conflict_type: string
+          created_at: string
+          domain: string
+          id: string
+          notes: string | null
+          status: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          a_ref: Json
+          b_ref: Json
+          conflict_type: string
+          created_at?: string
+          domain: string
+          id?: string
+          notes?: string | null
+          status?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          a_ref?: Json
+          b_ref?: Json
+          conflict_type?: string
+          created_at?: string
+          domain?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
+      akb_drafts: {
+        Row: {
+          body_md: string
+          created_at: string
+          domain: string
+          id: string
+          proposed_by: string
+          sources: Json
+          status: string
+          tags: string[]
+          title: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          body_md: string
+          created_at?: string
+          domain: string
+          id?: string
+          proposed_by: string
+          sources?: Json
+          status?: string
+          tags?: string[]
+          title: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          body_md?: string
+          created_at?: string
+          domain?: string
+          id?: string
+          proposed_by?: string
+          sources?: Json
+          status?: string
+          tags?: string[]
+          title?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
       akb_entries: {
         Row: {
           category: string
@@ -57,6 +171,170 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      akb_extractions: {
+        Row: {
+          completed_at: string | null
+          confidence_score: number | null
+          created_at: string
+          error: string | null
+          extracted_json: Json | null
+          id: string
+          model: string | null
+          status: string
+          upload_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          error?: string | null
+          extracted_json?: Json | null
+          id?: string
+          model?: string | null
+          status?: string
+          upload_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          error?: string | null
+          extracted_json?: Json | null
+          id?: string
+          model?: string | null
+          status?: string
+          upload_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "akb_extractions_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "akb_uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      akb_law: {
+        Row: {
+          authority: Json
+          body_md: string
+          created_at: string
+          domain: string
+          id: string
+          sources: Json
+          tags: string[]
+          telauthorium_id: string
+          title: string
+          user_id: string
+          version_number: number
+          workspace_id: string | null
+        }
+        Insert: {
+          authority: Json
+          body_md: string
+          created_at?: string
+          domain: string
+          id?: string
+          sources: Json
+          tags?: string[]
+          telauthorium_id: string
+          title: string
+          user_id: string
+          version_number: number
+          workspace_id?: string | null
+        }
+        Update: {
+          authority?: Json
+          body_md?: string
+          created_at?: string
+          domain?: string
+          id?: string
+          sources?: Json
+          tags?: string[]
+          telauthorium_id?: string
+          title?: string
+          user_id?: string
+          version_number?: number
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
+      akb_proof_gates: {
+        Row: {
+          evidence_json: Json
+          gate_name: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          evidence_json?: Json
+          gate_name: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          evidence_json?: Json
+          gate_name?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
+      akb_uploads: {
+        Row: {
+          created_at: string
+          filename: string | null
+          id: string
+          kind: string
+          mime_type: string | null
+          sha256: string | null
+          size_bytes: number | null
+          source_label: string | null
+          storage_path: string | null
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          filename?: string | null
+          id?: string
+          kind: string
+          mime_type?: string | null
+          sha256?: string | null
+          size_bytes?: number | null
+          source_label?: string | null
+          storage_path?: string | null
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          filename?: string | null
+          id?: string
+          kind?: string
+          mime_type?: string | null
+          sha256?: string | null
+          size_bytes?: number | null
+          source_label?: string | null
+          storage_path?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: []
       }
       artifact_versions: {
         Row: {

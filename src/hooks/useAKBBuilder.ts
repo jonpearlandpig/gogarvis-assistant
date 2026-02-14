@@ -1,0 +1,211 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { computeCoverage, publishEligible } from "@/lib/akbBuilder";
+
+export function useAKBBuilder(
+  userId: string | null,
+  workspaceId: string | null
+) {
+  const [uploads, setUploads] = useState<any[]>([]);
+  const [drafts, setDrafts] = useState<any[]>([]);
+  const [law, setLaw] = useState<any[]>([]);
+  const [conflicts, setConflicts] = useState<any[]>([]);
+  const [gates, setGates] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refetch = useCallback(async () => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+
+    const scopeEq = workspaceId ? { workspace_id: workspaceId } : {};
+    const uploadsQ = supabase
+      .from("akb_uploads")
+      .select("*")
+      .order("created_at", { ascending: false });
+    const draftsQ = supabase
+      .from("akb_drafts")
+      .select("*")
+      .order("created_at", { ascending: false });
+    const lawQ = supabase
+      .from("akb_law")
+      .select("*")
+      .order("created_at", { ascending: false });
+    const conflictsQ = supabase
+      .from("akb_conflicts")
+      .select("*")
+      .order("created_at", { ascending: false });
+    const gatesQ = supabase
+      .from("akb_proof_gates")
+      .select("*")
+      .order("updated_at", { ascending: false });
+
+    const [u, d, l, c, g] = await Promise.all([
+      uploadsQ,
+      draftsQ.match(scopeEq),
+      lawQ.match(scopeEq),
+      conflictsQ.match(scopeEq),
+      gatesQ.match(scopeEq),
+    ]);
+
+    setUploads(u.data || []);
+    setDrafts(d.data || []);
+    setLaw(l.data || []);
+    setConflicts(c.data || []);
+    setGates(g.data || []);
+
+    setLoading(false);
+  }, [userId, workspaceId]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  const addQuickNote = useCallback(
+    async (domain: string, title: string, body: string) => {
+      if (!userId) return;
+
+      const { data: upload, error: upErr } = await supabase
+        .from("akb_uploads")
+        .insert({
+          user_id: userId,
+          workspace_id: workspaceId,
+          kind: "note",
+          filename: null,
+          mime_type: "text/plain",
+          storage_path: null,
+          source_label: "Quick Note",
+        } as any)
+        .select()
+        .single();
+
+      if (upErr || !upload) {
+        toast.error("Failed to add note");
+        return;
+      }
+
+      const { error: drErr } = await supabase.from("akb_drafts").insert({
+        user_id: userId,
+        workspace_id: workspaceId,
+        domain,
+        title,
+        body_md: body,
+        tags: [],
+        sources: [{ upload_id: upload.id, note: "Quick Note" }],
+        proposed_by: "human",
+        status: "draft",
+      } as any);
+
+      if (drErr) {
+        toast.error("Failed to create draft");
+        return;
+      }
+
+      toast.success("Draft created");
+      await refetch();
+    },
+    [userId, workspaceId, refetch]
+  );
+
+  const setDraftStatus = useCallback(
+    async (draftId: string, status: string) => {
+      const { error } = await supabase
+        .from("akb_drafts")
+        .update({ status } as any)
+        .eq("id", draftId);
+
+      if (error) {
+        toast.error("Failed to update draft");
+        return;
+      }
+      await refetch();
+    },
+    [refetch]
+  );
+
+  const publishApprovedDrafts = useCallback(
+    async (authority: any) => {
+      if (!userId) return;
+
+      const approved = drafts.filter((d) => d.status === "approved");
+      const openConflicts = conflicts.filter(
+        (c) => c.status === "open"
+      ).length;
+
+      const eligible = publishEligible({
+        gates: gates.map((g) => ({
+          gate_name: g.gate_name,
+          status: g.status,
+        })),
+        openConflicts,
+      });
+
+      if (!eligible) {
+        toast.error("Publish blocked: proof gates or conflicts");
+        return;
+      }
+
+      if (approved.length === 0) {
+        toast.error("No approved drafts to publish");
+        return;
+      }
+
+      const inserts = approved.map((d) => ({
+        user_id: userId,
+        workspace_id: workspaceId,
+        domain: d.domain,
+        title: d.title,
+        body_md: d.body_md,
+        tags: d.tags || [],
+        sources: d.sources || [],
+        authority,
+      }));
+
+      const { error } = await supabase
+        .from("akb_law")
+        .insert(inserts as any);
+
+      if (error) {
+        toast.error("Failed to publish law");
+        return;
+      }
+
+      toast.success("Published to AKB Law");
+      await refetch();
+    },
+    [userId, workspaceId, drafts, conflicts, gates, refetch]
+  );
+
+  const metrics = useMemo(() => {
+    const approved = drafts.filter((d) => d.status === "approved");
+    const coverage = computeCoverage(approved);
+    const openConflicts = conflicts.filter(
+      (c) => c.status === "open"
+    ).length;
+    const eligible = publishEligible({
+      gates: gates.map((g) => ({
+        gate_name: g.gate_name,
+        status: g.status,
+      })),
+      openConflicts,
+    });
+    return { coverage, openConflicts, eligible };
+  }, [drafts, conflicts, gates]);
+
+  return {
+    loading,
+    uploads,
+    drafts,
+    law,
+    conflicts,
+    gates,
+    metrics,
+    refetch,
+    addQuickNote,
+    setDraftStatus,
+    publishApprovedDrafts,
+  };
+}
