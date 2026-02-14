@@ -3,9 +3,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Shield } from "lucide-react";
+import garvisLogoBlack from "@/assets/garvis_logo_black.png";
 
 const Auth = () => {
   const { signIn, signUp } = useAuth();
@@ -49,20 +48,19 @@ const Auth = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md border-border/50 bg-card garvis-glow">
-        <CardHeader className="text-center space-y-4">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 border border-primary/30">
-            <Shield className="h-8 w-8 text-primary garvis-text-glow" />
-          </div>
-          <CardTitle className="text-2xl font-mono tracking-wider text-primary garvis-text-glow">
-            GARVIS
-          </CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Sovereign Intelligence Workspace
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
+      <div className="w-full max-w-2xl space-y-12">
+        {/* Logo — large and prominent, matching chat hero */}
+        <div className="flex justify-center">
+          <img
+            src={garvisLogoBlack}
+            alt="goGARVIS"
+            className="h-48 sm:h-64 md:h-80"
+          />
+        </div>
+
+        {/* Auth card — matching chat input card style */}
+        <div className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm p-6 shadow-lg shadow-black/20 space-y-6">
           {/* Google Sign-In */}
           <Button
             onClick={handleGoogleSignIn}
@@ -84,11 +82,10 @@ const Auth = () => {
               <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-card px-2 text-muted-foreground">or continue with email</span>
+              <span className="bg-card/80 px-2 text-muted-foreground">or continue with email</span>
             </div>
           </div>
 
-          {/* Email/Password */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               type="email"
@@ -96,7 +93,7 @@ const Auth = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="bg-muted border-border"
+              className="bg-muted border-border font-mono text-sm"
             />
             <Input
               type="password"
@@ -105,7 +102,7 @@ const Auth = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="bg-muted border-border"
+              className="bg-muted border-border font-mono text-sm"
             />
             <Button type="submit" className="w-full font-mono" disabled={loading}>
               {loading ? "Processing..." : isSignUp ? "Create Account" : "Sign In"}
@@ -113,12 +110,19 @@ const Auth = () => {
           </form>
           <button
             onClick={() => setIsSignUp(!isSignUp)}
-            className="w-full text-center text-sm text-muted-foreground hover:text-primary transition-colors"
+            className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             {isSignUp ? "Already have an account? Sign in" : "Need an account? Sign up"}
           </button>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Tagline — matching chat hero */}
+        <div className="flex items-center justify-center">
+          <p className="text-xs text-muted-foreground font-mono tracking-wide">
+            Lift the learner. Launch the leader.
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
