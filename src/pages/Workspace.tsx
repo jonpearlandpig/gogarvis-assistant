@@ -3,13 +3,15 @@ import { ConversationSidebar } from "@/components/workspace/ConversationSidebar"
 import { ChatPanel } from "@/components/workspace/ChatPanel";
 import { ArtifactPanel } from "@/components/workspace/ArtifactPanel";
 import { AKBPanel } from "@/components/workspace/AKBPanel";
+import { ProfilePanel } from "@/components/workspace/ProfilePanel";
 import { useConversations } from "@/hooks/useConversations";
 import { useMessages } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useArtifacts } from "@/hooks/useArtifacts";
+import { useUserProfile } from "@/hooks/useUserProfile";
 import { streamChat } from "@/lib/stream-chat";
 import { toast } from "sonner";
-import { PanelRight, Database } from "lucide-react";
+import { PanelRight, Database, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Workspace = () => {
@@ -20,6 +22,7 @@ const Workspace = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [showArtifacts, setShowArtifacts] = useState(false);
   const [showAKB, setShowAKB] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const {
@@ -30,6 +33,8 @@ const Workspace = () => {
     saveNewVersion,
     fetchVersions,
   } = useArtifacts(user?.id, activeConvId);
+
+  const { version: uopVersion, saveProfile } = useUserProfile(user?.id || null);
 
   const handleNewChat = useCallback(async () => {
     const conv = await create();
@@ -118,7 +123,16 @@ const Workspace = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => { setShowAKB(!showAKB); if (!showAKB) setShowArtifacts(false); }}
+            onClick={() => { setShowProfile(!showProfile); if (!showProfile) { setShowAKB(false); setShowArtifacts(false); } }}
+            className="gap-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <User className="h-4 w-4" />
+            Profile
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setShowAKB(!showAKB); if (!showAKB) { setShowArtifacts(false); setShowProfile(false); } }}
             className="gap-2 text-xs text-muted-foreground hover:text-foreground"
           >
             <Database className="h-4 w-4" />
@@ -127,7 +141,7 @@ const Workspace = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => { setShowArtifacts(!showArtifacts); if (!showArtifacts) setShowAKB(false); }}
+            onClick={() => { setShowArtifacts(!showArtifacts); if (!showArtifacts) { setShowAKB(false); setShowProfile(false); } }}
             className="gap-2 text-xs text-muted-foreground hover:text-foreground"
           >
             <PanelRight className="h-4 w-4" />
@@ -165,6 +179,13 @@ const Workspace = () => {
             <div className="w-80 border-l border-border bg-card">
               <AKBPanel conversationId={activeConvId} />
             </div>
+          )}
+          {showProfile && (
+            <ProfilePanel
+              version={uopVersion}
+              onSave={async (cfg) => { await saveProfile(cfg); }}
+              onClose={() => setShowProfile(false)}
+            />
           )}
         </div>
       </div>
