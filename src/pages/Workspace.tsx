@@ -32,7 +32,7 @@ import { UOPBadge } from "@/components/profile/UOPBadge";
 import { AKBStatusBar } from "@/components/akb/AKBStatusBar";
 import { runModuleDetection } from "@/lib/module-detection-client";
 import { computeJournalScore } from "@/lib/journal-signal";
-import garvisLogo from "@/assets/garvis_logo_white.png";
+import garvisLogo from "@/assets/garvis_logo_black.png";
 
 // ─── Helpers ──────────────────────────────────────────────
 const daysBetween = (a: Date, b: Date) =>
