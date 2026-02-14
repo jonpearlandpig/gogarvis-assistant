@@ -187,6 +187,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      gen_telauthorium_id: { Args: never; Returns: string }
       is_conversation_owner: { Args: { conv_id: string }; Returns: boolean }
     }
     Enums: {
