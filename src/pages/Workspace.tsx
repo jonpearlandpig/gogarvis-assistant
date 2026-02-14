@@ -114,6 +114,22 @@ const Workspace = () => {
     setShowAKBBuilder(false);
   };
 
+  const togglePanel = (panel: "profile" | "akb" | "akbBuilder" | "artifacts") => {
+    const next =
+      panel === "profile" ? !showProfile :
+      panel === "akb" ? !showAKB :
+      panel === "akbBuilder" ? !showAKBBuilder :
+      !showArtifacts;
+
+    closePanels();
+    if (!next) return;
+
+    if (panel === "profile") setShowProfile(true);
+    if (panel === "akb") setShowAKB(true);
+    if (panel === "akbBuilder") setShowAKBBuilder(true);
+    if (panel === "artifacts") setShowArtifacts(true);
+  };
+
   return (
     <div className="flex h-screen w-full bg-background">
       <ConversationSidebar
@@ -132,13 +148,13 @@ const Workspace = () => {
         <div className="flex items-center justify-between border-b border-border px-4 py-2">
           <UOPBadge
             version={uopVersion}
-            onClick={() => { const next = !showProfile; closePanels(); if (next) setShowProfile(true); }}
+            onClick={() => togglePanel("profile")}
           />
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => { const next = !showProfile; closePanels(); if (next) setShowProfile(true); }}
+              onClick={() => togglePanel("profile")}
               className="gap-2 text-xs text-muted-foreground hover:text-foreground"
             >
               <User className="h-4 w-4" />
@@ -147,7 +163,7 @@ const Workspace = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => { const next = !showAKB; closePanels(); if (next) setShowAKB(true); }}
+              onClick={() => togglePanel("akb")}
               className="gap-2 text-xs text-muted-foreground hover:text-foreground"
             >
               <Database className="h-4 w-4" />
@@ -156,7 +172,7 @@ const Workspace = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => { const next = !showAKBBuilder; closePanels(); if (next) setShowAKBBuilder(true); }}
+              onClick={() => togglePanel("akbBuilder")}
               className="gap-2 text-xs text-muted-foreground hover:text-foreground"
             >
               <Hammer className="h-4 w-4" />
@@ -165,7 +181,7 @@ const Workspace = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => { const next = !showArtifacts; closePanels(); if (next) setShowArtifacts(true); }}
+              onClick={() => togglePanel("artifacts")}
               className="gap-2 text-xs text-muted-foreground hover:text-foreground"
             >
               <PanelRight className="h-4 w-4" />
