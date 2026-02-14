@@ -304,6 +304,8 @@ export type Database = {
           sha256: string | null
           size_bytes: number | null
           source_label: string | null
+          source_ref_id: string | null
+          source_type: string | null
           storage_path: string | null
           user_id: string
           workspace_id: string | null
@@ -317,6 +319,8 @@ export type Database = {
           sha256?: string | null
           size_bytes?: number | null
           source_label?: string | null
+          source_ref_id?: string | null
+          source_type?: string | null
           storage_path?: string | null
           user_id: string
           workspace_id?: string | null
@@ -330,7 +334,104 @@ export type Database = {
           sha256?: string | null
           size_bytes?: number | null
           source_label?: string | null
+          source_ref_id?: string | null
+          source_type?: string | null
           storage_path?: string | null
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
+      akb_url_pages: {
+        Row: {
+          created_at: string
+          id: string
+          source_id: string
+          text_content: string
+          title: string | null
+          url: string
+          user_id: string
+          word_count: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          source_id: string
+          text_content: string
+          title?: string | null
+          url: string
+          user_id: string
+          word_count?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          source_id?: string
+          text_content?: string
+          title?: string | null
+          url?: string
+          user_id?: string
+          word_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "akb_url_pages_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "akb_url_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      akb_url_sources: {
+        Row: {
+          bytes: number | null
+          content_hash: string | null
+          content_type: string | null
+          created_at: string
+          error: string | null
+          fetched_at: string | null
+          http_status: number | null
+          id: string
+          meta: Json
+          normalized_url: string
+          parsed_at: string | null
+          status: string
+          url: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          bytes?: number | null
+          content_hash?: string | null
+          content_type?: string | null
+          created_at?: string
+          error?: string | null
+          fetched_at?: string | null
+          http_status?: number | null
+          id?: string
+          meta?: Json
+          normalized_url: string
+          parsed_at?: string | null
+          status?: string
+          url: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          bytes?: number | null
+          content_hash?: string | null
+          content_type?: string | null
+          created_at?: string
+          error?: string | null
+          fetched_at?: string | null
+          http_status?: number | null
+          id?: string
+          meta?: Json
+          normalized_url?: string
+          parsed_at?: string | null
+          status?: string
+          url?: string
           user_id?: string
           workspace_id?: string | null
         }

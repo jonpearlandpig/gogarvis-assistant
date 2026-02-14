@@ -348,6 +348,7 @@ const Workspace = () => {
               isStreaming={isStreaming}
               onSend={handleSend}
               onStop={handleStop}
+              onUrlIngested={() => gate.refetch()}
               onCreateArtifact={async (content) => {
                 if (akbMode !== "full") {
                   toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
