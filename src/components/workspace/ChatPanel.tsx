@@ -1,21 +1,24 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Square } from "lucide-react";
+import { Send, Square, Copy, FileText, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ReactMarkdown from "react-markdown";
 import type { Msg } from "@/lib/stream-chat";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Props {
   messages: (Msg & { id?: string })[];
   isStreaming: boolean;
   onSend: (text: string) => void;
   onStop: () => void;
+  onCreateArtifact?: (content: string) => void;
 }
 
-export function ChatPanel({ messages, isStreaming, onSend, onStop }: Props) {
+export function ChatPanel({ messages, isStreaming, onSend, onStop, onCreateArtifact }: Props) {
   const [input, setInput] = useState("");
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -61,20 +64,51 @@ export function ChatPanel({ messages, isStreaming, onSend, onStop }: Props) {
                 msg.role === "user" ? "justify-end" : "justify-start"
               )}
             >
-              <div
-                className={cn(
-                  "rounded-lg px-4 py-3 max-w-[85%] text-sm",
-                  msg.role === "user"
-                    ? "bg-primary/15 border border-primary/20 text-foreground"
-                    : "bg-card border border-border text-foreground"
-                )}
-              >
-                {msg.role === "assistant" ? (
-                  <div className="prose-garvis">
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+              <div className="max-w-[85%]">
+                <div
+                  className={cn(
+                    "rounded-lg px-4 py-3 text-sm",
+                    msg.role === "user"
+                      ? "bg-primary/15 border border-primary/20 text-foreground"
+                      : "bg-card border border-border text-foreground"
+                  )}
+                >
+                  {msg.role === "assistant" ? (
+                    <div className="prose-garvis">
+                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  )}
+                </div>
+                {msg.role === "assistant" && msg.content && !isStreaming && (
+                  <div className="flex items-center gap-1 mt-1.5 ml-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1.5"
+                      onClick={() => {
+                        navigator.clipboard.writeText(msg.content);
+                        setCopiedIdx(i);
+                        toast.success("Copied to clipboard");
+                        setTimeout(() => setCopiedIdx(null), 2000);
+                      }}
+                    >
+                      {copiedIdx === i ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                      {copiedIdx === i ? "Copied" : "Copy"}
+                    </Button>
+                    {onCreateArtifact && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1.5"
+                        onClick={() => onCreateArtifact(msg.content)}
+                      >
+                        <FileText className="h-3 w-3" />
+                        Save as Artifact
+                      </Button>
+                    )}
                   </div>
-                ) : (
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
                 )}
               </div>
             </div>

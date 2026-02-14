@@ -141,6 +141,13 @@ const Workspace = () => {
               isStreaming={isStreaming}
               onSend={handleSend}
               onStop={handleStop}
+              onCreateArtifact={(content) => {
+                const title = content.slice(0, 50).replace(/[#*_\n]/g, "").trim() || "Untitled";
+                createArtifact(title, "text", content);
+                setShowArtifacts(true);
+                setShowAKB(false);
+                toast.success("Artifact created");
+              }}
             />
           </div>
           {showArtifacts && (
