@@ -20,6 +20,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useArtifacts } from "@/hooks/useArtifacts";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAKBIntakeGate } from "@/hooks/useAKBIntakeGate";
+import { useAKBDomains } from "@/hooks/useAKBDomains";
 import { useOnboardingGate } from "@/hooks/useOnboardingGate";
 import { streamChat, type AKBMeta } from "@/lib/stream-chat";
 import { toast } from "sonner";
@@ -57,7 +58,7 @@ const Workspace = () => {
   // AKB soft-lock state
   const [akbMode, setAKBMode] = useState<"locked" | "foundation" | "full">("locked");
   const [akbCoverage, setAKBCoverage] = useState<number>(0);
-  const [completedDomains, setCompletedDomains] = useState<string[]>([]);
+  const akbDomains = useAKBDomains(user?.id || null);
   const prevCompletedCount = useRef(0);
   const foundationLock = akbMode !== "full";
 
@@ -228,11 +229,14 @@ const Workspace = () => {
             }
 
             if (Array.isArray(meta?.completedDomains)) {
-              setCompletedDomains(meta.completedDomains);
-              if (meta.completedDomains.length > prevCompletedCount.current) {
+              if (
+                prevCompletedCount.current > 0 &&
+                meta.completedDomains.length > prevCompletedCount.current
+              ) {
                 toast.success("Domain Complete");
               }
               prevCompletedCount.current = meta.completedDomains.length;
+              akbDomains.refetch();
             }
 
             if (fullResponse && convId) {
@@ -301,8 +305,11 @@ const Workspace = () => {
 
         {gate.hasFirstDataset && (
           <AKBStatusBar
-            domainsComplete={completedDomains.length}
-            coverage={akbCoverage}
+            domains={akbDomains.domains}
+            completedCount={akbDomains.completedCount}
+            total={akbDomains.total}
+            coveragePercent={akbDomains.coveragePercent}
+            nextDomain={akbDomains.nextDomain}
             visible={true}
           />
         )}
