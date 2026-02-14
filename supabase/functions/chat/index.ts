@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,6 +47,37 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
+    // Fetch user profile version for context injection
+    let profileInjection = "";
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+      const sb = createClient(supabaseUrl, supabaseKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user } } = await sb.auth.getUser();
+      if (user) {
+        const { data: profile } = await sb
+          .from("user_profile_versions")
+          .select("config_json")
+          .eq("user_id", user.id)
+          .order("version_number", { ascending: false })
+          .limit(1)
+          .single();
+        if (profile?.config_json) {
+          profileInjection = `The user's current profile configuration:\n${JSON.stringify(profile.config_json, null, 2)}`;
+        }
+      }
+    }
+
+    const systemMessages: { role: string; content: string }[] = [
+      { role: "system", content: GARVIS_SYSTEM_PROMPT },
+    ];
+    if (profileInjection) {
+      systemMessages.push({ role: "system", content: profileInjection });
+    }
+
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
@@ -57,7 +89,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
           messages: [
-            { role: "system", content: GARVIS_SYSTEM_PROMPT },
+            ...systemMessages,
             ...messages,
           ],
           stream: true,
