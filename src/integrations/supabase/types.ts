@@ -470,6 +470,42 @@ export type Database = {
         }
         Relationships: []
       }
+      garvis_module_scaffolds: {
+        Row: {
+          context: Json
+          created_at: string
+          id: string
+          module_key: string
+          next_steps: Json
+          status: string
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          context?: Json
+          created_at?: string
+          id?: string
+          module_key: string
+          next_steps?: Json
+          status?: string
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          context?: Json
+          created_at?: string
+          id?: string
+          module_key?: string
+          next_steps?: Json
+          status?: string
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
       garvis_modules: {
         Row: {
           activation_threshold: number
