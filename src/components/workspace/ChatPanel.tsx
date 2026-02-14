@@ -135,7 +135,7 @@ export function ChatPanel({ messages, isStreaming, onSend, onStop, onCreateArtif
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Enter your directive..."
+            placeholder="Go Garvis!"
             className="min-h-[44px] max-h-32 resize-none bg-muted border-border font-mono text-sm"
             rows={1}
           />
