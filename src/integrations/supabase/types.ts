@@ -500,6 +500,7 @@ export type Database = {
       garvis_user_modules: {
         Row: {
           activated_at: string | null
+          activated_by: string
           activation_score: number | null
           confidence: number | null
           created_at: string
@@ -510,6 +511,7 @@ export type Database = {
         }
         Insert: {
           activated_at?: string | null
+          activated_by?: string
           activation_score?: number | null
           confidence?: number | null
           created_at?: string
@@ -520,6 +522,7 @@ export type Database = {
         }
         Update: {
           activated_at?: string | null
+          activated_by?: string
           activation_score?: number | null
           confidence?: number | null
           created_at?: string
