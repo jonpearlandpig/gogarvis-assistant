@@ -271,6 +271,10 @@ const Workspace = () => {
         if (result?.kind === "json") {
           const action = result.payload?.ui_action;
           if (action) setUiAction({ type: action, payload: result.payload });
+
+          if (result.payload?.message && convId) {
+            await addMessage("assistant", String(result.payload.message));
+          }
         }
       } catch (err: any) {
         setIsStreaming(false);
