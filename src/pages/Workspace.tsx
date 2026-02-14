@@ -1,21 +1,39 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { ConversationSidebar } from "@/components/workspace/ConversationSidebar";
 import { ChatPanel } from "@/components/workspace/ChatPanel";
 import { ArtifactPanel } from "@/components/workspace/ArtifactPanel";
 import { AKBPanel } from "@/components/workspace/AKBPanel";
 import { ProfilePanel } from "@/components/workspace/ProfilePanel";
 import { AKBBuilderPanel } from "@/components/akb/AKBBuilderPanel";
+import {
+  FoundationCompleteModal,
+  WorkspaceRevealModal,
+  OperatorModeBanner,
+  SovereignRenameModal,
+} from "@/components/workspace/ProgressionModals";
 import { useConversations } from "@/hooks/useConversations";
 import { useMessages } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useArtifacts } from "@/hooks/useArtifacts";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { streamChat, type AKBMeta } from "@/lib/stream-chat";
+import { GARVIS_UI } from "@/lib/garvis-ui-strings";
 import { toast } from "sonner";
 import { PanelRight, Database, User, Hammer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UOPBadge } from "@/components/profile/UOPBadge";
 
+// ─── Helpers ──────────────────────────────────────────────
+const daysBetween = (a: Date, b: Date) =>
+  Math.floor((a.getTime() - b.getTime()) / (1000 * 60 * 60 * 24));
+
+function safeParseDate(v: any): Date | null {
+  if (!v) return null;
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+// ─── Component ────────────────────────────────────────────
 const Workspace = () => {
   const { user } = useAuth();
   const { conversations, create, updateTitle, remove } = useConversations();
@@ -32,6 +50,45 @@ const Workspace = () => {
   const [akbMode, setAKBMode] = useState<"locked" | "foundation" | "full">("locked");
   const [akbCoverage, setAKBCoverage] = useState<number>(0);
 
+  // ─── Progression state ──────────────────────────────────
+  const [prevAKBMode, setPrevAKBMode] = useState<"locked" | "foundation" | "full">("locked");
+  const [workspaceRevealed, setWorkspaceRevealed] = useState(false);
+  const [showFoundationComplete, setShowFoundationComplete] = useState(false);
+  const [showWorkspaceReveal, setShowWorkspaceReveal] = useState(false);
+  const [showOperatorBanner, setShowOperatorBanner] = useState(false);
+  const [showSovereignRename, setShowSovereignRename] = useState(false);
+  const [customName, setCustomName] = useState("Garvis");
+
+  const accountCreatedAt = useMemo(
+    () => safeParseDate((user as any)?.created_at),
+    [user]
+  );
+  const accountAgeDays = useMemo(() => {
+    if (!accountCreatedAt) return 0;
+    return Math.max(0, daysBetween(new Date(), accountCreatedAt));
+  }, [accountCreatedAt]);
+
+  // Trigger foundation-complete when AKB first hits "full"
+  useEffect(() => {
+    if (prevAKBMode !== "full" && akbMode === "full" && !workspaceRevealed) {
+      setShowFoundationComplete(true);
+    }
+    setPrevAKBMode(akbMode);
+  }, [akbMode, prevAKBMode, workspaceRevealed]);
+
+  // Operator mode: 30+ days
+  useEffect(() => {
+    if (!workspaceRevealed) return;
+    if (accountAgeDays >= 30) setShowOperatorBanner(true);
+  }, [workspaceRevealed, accountAgeDays]);
+
+  // Sovereign mode: 60+ days
+  useEffect(() => {
+    if (!workspaceRevealed) return;
+    if (accountAgeDays >= 60) setShowSovereignRename(true);
+  }, [workspaceRevealed, accountAgeDays]);
+
+  // ─── Existing hooks ─────────────────────────────────────
   const {
     artifacts,
     versions,
@@ -43,6 +100,7 @@ const Workspace = () => {
 
   const { version: uopVersion, profileName, saveProfile, renameProfile } = useUserProfile(user?.id || null);
 
+  // ─── Handlers ───────────────────────────────────────────
   const handleNewChat = useCallback(async () => {
     const conv = await create();
     if (conv) setActiveConvId(conv.id);
@@ -149,9 +207,9 @@ const Workspace = () => {
     if (panel === "artifacts") setShowArtifacts(true);
   };
 
-  // Artifacts gated until AKB full (80%+)
   const artifactsAllowed = akbMode === "full";
 
+  // ─── Render ─────────────────────────────────────────────
   return (
     <div className="flex h-screen w-full bg-background">
       <ConversationSidebar
@@ -167,100 +225,133 @@ const Workspace = () => {
       />
 
       <div className="flex flex-1 flex-col">
+        {/* Operator Mode Banner */}
+        <OperatorModeBanner
+          open={showOperatorBanner}
+          onClose={() => setShowOperatorBanner(false)}
+        />
+
         <div className="flex items-center justify-between border-b border-border px-4 py-2">
           <UOPBadge
             version={uopVersion}
             onClick={() => togglePanel("profile")}
           />
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => togglePanel("profile")}
-              className="gap-2 text-xs text-muted-foreground hover:text-foreground"
-            >
-              <User className="h-4 w-4" />
-              Profile
+            <Button variant="ghost" size="sm" onClick={() => togglePanel("profile")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
+              <User className="h-4 w-4" /> Profile
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => togglePanel("akb")}
-              className="gap-2 text-xs text-muted-foreground hover:text-foreground"
-            >
-              <Database className="h-4 w-4" />
-              AKB
+            <Button variant="ghost" size="sm" onClick={() => togglePanel("akb")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
+              <Database className="h-4 w-4" /> AKB
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => togglePanel("akbBuilder")}
-              className="gap-2 text-xs text-muted-foreground hover:text-foreground"
-            >
-              <Hammer className="h-4 w-4" />
-              AKB Builder
+            <Button variant="ghost" size="sm" onClick={() => togglePanel("akbBuilder")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
+              <Hammer className="h-4 w-4" /> AKB Builder
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => togglePanel("artifacts")}
-              className="gap-2 text-xs text-muted-foreground hover:text-foreground"
-            >
-              <PanelRight className="h-4 w-4" />
-              Artifacts
+            <Button variant="ghost" size="sm" onClick={() => togglePanel("artifacts")} className="gap-2 text-xs text-muted-foreground hover:text-foreground">
+              <PanelRight className="h-4 w-4" /> Artifacts
             </Button>
           </div>
         </div>
 
-        <div className="flex flex-1 overflow-hidden">
-          <div className="flex-1">
-            <ChatPanel
-              messages={messages}
-              isStreaming={isStreaming}
-              onSend={handleSend}
-              onStop={handleStop}
-              onCreateArtifact={async (content) => {
-                if (!artifactsAllowed) {
-                  toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
-                  togglePanel("akbBuilder");
-                  return;
-                }
-                const title = content.slice(0, 50).replace(/[#*_\n]/g, "").trim() || "Untitled";
-                await createArtifact(title, "text", content);
-                togglePanel("artifacts");
-                toast.success("Artifact created");
-              }}
-            />
-          </div>
-          {showArtifacts && (
-            <ArtifactPanel
-              artifacts={artifacts}
-              versions={versions}
-              onSelectArtifact={handleSelectArtifact}
-              onCreateArtifact={createArtifact}
-              onSaveVersion={saveNewVersion}
-              onClose={() => setShowArtifacts(false)}
-            />
-          )}
-          {showAKB && (
-            <div className="w-80 border-l border-border bg-card">
-              <AKBPanel conversationId={activeConvId} />
+        {/* ── Gated workspace view ── */}
+        {!workspaceRevealed ? (
+          <div className="flex flex-1 flex-col items-center justify-center text-center py-24 px-6 text-sm">
+            <div className="font-medium">
+              {akbMode === "full"
+                ? GARVIS_UI.foundationComplete.title
+                : GARVIS_UI.foundation.lockedWorkspace.title}
             </div>
-          )}
-          {showAKBBuilder && (
-            <AKBBuilderPanel workspaceId={activeConvId ?? null} />
-          )}
-          {showProfile && (
-            <ProfilePanel
-              version={uopVersion}
-              profileName={profileName}
-              onSave={async (cfg) => { await saveProfile(cfg); }}
-              onRename={async (n) => { await renameProfile(n); }}
-              onClose={() => setShowProfile(false)}
-            />
-          )}
-        </div>
+            <div className="mt-2 text-muted-foreground">
+              {akbMode === "full"
+                ? GARVIS_UI.foundationComplete.body[0]
+                : GARVIS_UI.foundation.lockedWorkspace.body[0]}
+            </div>
+            <div className="mt-6">
+              <button onClick={() => togglePanel("akbBuilder")} className="text-xs underline">
+                {GARVIS_UI.foundation.cta}
+              </button>
+            </div>
+            <div className="mt-10 text-xs text-muted-foreground">
+              {GARVIS_UI.footerTagline}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-1 overflow-hidden">
+            <div className="flex-1">
+              <ChatPanel
+                messages={messages}
+                isStreaming={isStreaming}
+                onSend={handleSend}
+                onStop={handleStop}
+                onCreateArtifact={async (content) => {
+                  if (!artifactsAllowed) {
+                    toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
+                    togglePanel("akbBuilder");
+                    return;
+                  }
+                  const title = content.slice(0, 50).replace(/[#*_\n]/g, "").trim() || "Untitled";
+                  await createArtifact(title, "text", content);
+                  togglePanel("artifacts");
+                  toast.success("Artifact created");
+                }}
+              />
+            </div>
+            {showArtifacts && (
+              <ArtifactPanel
+                artifacts={artifacts}
+                versions={versions}
+                onSelectArtifact={handleSelectArtifact}
+                onCreateArtifact={createArtifact}
+                onSaveVersion={saveNewVersion}
+                onClose={() => setShowArtifacts(false)}
+              />
+            )}
+            {showAKB && (
+              <div className="w-80 border-l border-border bg-card">
+                <AKBPanel conversationId={activeConvId} />
+              </div>
+            )}
+            {showAKBBuilder && (
+              <AKBBuilderPanel workspaceId={activeConvId ?? null} />
+            )}
+            {showProfile && (
+              <ProfilePanel
+                version={uopVersion}
+                profileName={profileName}
+                onSave={async (cfg) => { await saveProfile(cfg); }}
+                onRename={async (n) => { await renameProfile(n); }}
+                onClose={() => setShowProfile(false)}
+              />
+            )}
+          </div>
+        )}
       </div>
+
+      {/* ── Progression modals ── */}
+      <FoundationCompleteModal
+        open={showFoundationComplete}
+        onEnter={() => {
+          setShowFoundationComplete(false);
+          setShowWorkspaceReveal(true);
+        }}
+      />
+      <WorkspaceRevealModal
+        open={showWorkspaceReveal}
+        onDone={() => {
+          setShowWorkspaceReveal(false);
+          setWorkspaceRevealed(true);
+          toast.success("Workspace unlocked");
+        }}
+      />
+      <SovereignRenameModal
+        open={showSovereignRename}
+        currentName={customName}
+        onClose={() => setShowSovereignRename(false)}
+        onSave={(n) => {
+          setCustomName(n);
+          setShowSovereignRename(false);
+          toast.success(`Name updated: ${n}`);
+        }}
+      />
     </div>
   );
 };
