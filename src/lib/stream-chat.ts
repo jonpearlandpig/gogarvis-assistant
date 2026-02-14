@@ -14,7 +14,19 @@ export type ScopeContract = {
   cross_project_allowed: boolean;
 };
 
+export type StreamResult =
+  | { kind: "json"; payload: any }
+  | { kind: "stream" };
+
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+
+async function parseJsonIfPresent(resp: Response): Promise<any | null> {
+  const ct = resp.headers.get("content-type") || "";
+  if (ct.includes("application/json")) {
+    return await resp.json();
+  }
+  return null;
+}
 
 export async function streamChat({
   messages,
@@ -28,7 +40,7 @@ export async function streamChat({
   onDelta: (deltaText: string) => void;
   onDone: (meta?: AKBMeta) => void;
   signal?: AbortSignal;
-}) {
+}): Promise<StreamResult> {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
 
@@ -48,6 +60,14 @@ export async function streamChat({
     body: JSON.stringify({ messages, scope: scopePayload }),
     signal,
   });
+
+  // Handle JSON early-exit responses (ui_action, errors, etc.)
+  const json = await parseJsonIfPresent(resp);
+  if (json) {
+    if (json.message) onDelta(json.message);
+    onDone(json.akb_meta || {});
+    return { kind: "json", payload: json };
+  }
 
   // Read AKB headers immediately
   const akbModeRaw = resp.headers.get("X-AKB-Mode");
@@ -99,7 +119,7 @@ export async function streamChat({
 
       if (data === "[DONE]") {
         onDone(meta);
-        return;
+        return { kind: "stream" };
       }
 
       try {
@@ -113,4 +133,5 @@ export async function streamChat({
   }
 
   onDone(meta);
+  return { kind: "stream" };
 }

@@ -24,7 +24,9 @@ import { useAKBIntakeGate } from "@/hooks/useAKBIntakeGate";
 import { useAKBDomains } from "@/hooks/useAKBDomains";
 import { useAKBStructure } from "@/hooks/useAKBStructure";
 import { useOnboardingGate } from "@/hooks/useOnboardingGate";
-import { streamChat, type AKBMeta, type ScopeContract } from "@/lib/stream-chat";
+import { streamChat, type AKBMeta, type ScopeContract, type StreamResult } from "@/lib/stream-chat";
+import { NotHereCard } from "@/components/scope/NotHereCard";
+import { ScopeResolverCard } from "@/components/scope/ScopeResolverCard";
 import { toast } from "sonner";
 import { Hammer } from "lucide-react";
 import { buildReceiptReportArtifactSeed } from "@/lib/receiptsToArtifact";
@@ -58,6 +60,7 @@ const Workspace = () => {
   const [showProfile, setShowProfile] = useState(false);
   const [showAKBBuilder, setShowAKBBuilder] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const [uiAction, setUiAction] = useState<null | { type: string; payload?: any }>(null);
 
   // AKB soft-lock state
   const [akbMode, setAKBMode] = useState<"locked" | "foundation" | "full">("locked");
@@ -78,6 +81,10 @@ const Workspace = () => {
     cross_project_allowed: scopeMode === "home",
   }), [scopeMode, scopedAKB.activeProjectId]);
 
+  // Clear UI action when scope changes
+  useEffect(() => {
+    setUiAction(null);
+  }, [scopedAKB.activeProjectId]);
   // ─── Gates ──────────────────────────────────────────────
   const gate = useAKBIntakeGate(user?.id || null, null);
   const onboarding = useOnboardingGate(user?.id || null);
@@ -227,7 +234,7 @@ const Workspace = () => {
       let fullResponse = "";
 
       try {
-        await streamChat({
+        const result = await streamChat({
           messages: [
             ...messages.map((m) => ({ role: m.role, content: m.content })),
             { role: "user" as const, content: text },
@@ -251,7 +258,6 @@ const Workspace = () => {
                 toast.success("Domain Complete");
               }
               prevCompletedCount.current = newCount;
-              // Refetch DB-driven domain state so status bar updates
               akbDomains.refetch();
             }
 
@@ -261,6 +267,11 @@ const Workspace = () => {
           },
           signal: controller.signal,
         });
+
+        if (result?.kind === "json") {
+          const action = result.payload?.ui_action;
+          if (action) setUiAction({ type: action, payload: result.payload });
+        }
       } catch (err: any) {
         setIsStreaming(false);
         if (err.name !== "AbortError") {
@@ -412,6 +423,33 @@ const Workspace = () => {
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden">
               {user?.id && <ModuleNudge userId={user.id} />}
+
+              {uiAction?.type === "not_here" && (
+                <div className="px-3 pb-2">
+                  <NotHereCard
+                    onSwitchHome={() => {
+                      scopedAKB.setActiveProjectId(null);
+                      setUiAction(null);
+                    }}
+                    onSearch={() => {
+                      setUiAction({ type: "scope_resolver", payload: uiAction.payload });
+                    }}
+                  />
+                </div>
+              )}
+
+              {uiAction?.type === "scope_resolver" && (
+                <div className="px-3 pb-2">
+                  <ScopeResolverCard
+                    projects={scopedAKB.projects.map((p) => ({ id: p.id, name: p.name }))}
+                    onSelect={(id) => {
+                      scopedAKB.setActiveProjectId(id);
+                      setUiAction(null);
+                      toast.message("Switched scope. Ask again.");
+                    }}
+                  />
+                </div>
+              )}
               <ChatPanel
                 messages={messages}
                 isStreaming={isStreaming}
