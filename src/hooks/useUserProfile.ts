@@ -8,7 +8,7 @@ export interface UOPConfig {
   tone?: string;
   include_risk_review?: boolean;
   advanced_notes?: string;
-  pigpen_focus?: {
+  garvis_lens?: {
     systems: number;
     creative: number;
     architect: number;
