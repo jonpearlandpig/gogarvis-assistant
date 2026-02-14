@@ -6,8 +6,8 @@ import { AKBPanel } from "@/components/workspace/AKBPanel";
 import { useConversations } from "@/hooks/useConversations";
 import { useMessages } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
+import { useArtifacts } from "@/hooks/useArtifacts";
 import { streamChat } from "@/lib/stream-chat";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { PanelRight, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,15 @@ const Workspace = () => {
   const [showAKB, setShowAKB] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
+  const {
+    artifacts,
+    versions,
+    setSelected,
+    createArtifact,
+    saveNewVersion,
+    fetchVersions,
+  } = useArtifacts(user?.id, activeConvId);
+
   const handleNewChat = useCallback(async () => {
     const conv = await create();
     if (conv) setActiveConvId(conv.id);
@@ -31,7 +40,6 @@ const Workspace = () => {
     async (text: string) => {
       let convId = activeConvId;
 
-      // Auto-create conversation if none active
       if (!convId) {
         const conv = await create();
         if (!conv) return;
@@ -39,17 +47,14 @@ const Workspace = () => {
         setActiveConvId(conv.id);
       }
 
-      // Add user message
       appendLocal({ role: "user", content: text });
       await addMessage("user", text);
 
-      // Auto-title on first message
       if (messages.length === 0) {
         const title = text.slice(0, 60) + (text.length > 60 ? "..." : "");
         updateTitle(convId, title);
       }
 
-      // Stream AI response
       setIsStreaming(true);
       const controller = new AbortController();
       abortRef.current = controller;
@@ -89,6 +94,11 @@ const Workspace = () => {
     setIsStreaming(false);
   };
 
+  const handleSelectArtifact = (a: any) => {
+    setSelected(a);
+    fetchVersions(a.id);
+  };
+
   return (
     <div className="flex h-screen w-full bg-background">
       <ConversationSidebar
@@ -103,7 +113,6 @@ const Workspace = () => {
       />
 
       <div className="flex flex-1 flex-col">
-        {/* Top bar */}
         <div className="flex items-center justify-end gap-1 border-b border-border px-4 py-2">
           <Button
             variant="ghost"
@@ -135,12 +144,14 @@ const Workspace = () => {
             />
           </div>
           {showArtifacts && (
-            <div className="w-80 border-l border-border bg-card">
-              <ArtifactPanel
-                conversationId={activeConvId}
-                onClose={() => setShowArtifacts(false)}
-              />
-            </div>
+            <ArtifactPanel
+              artifacts={artifacts}
+              versions={versions}
+              onSelectArtifact={handleSelectArtifact}
+              onCreateArtifact={createArtifact}
+              onSaveVersion={saveNewVersion}
+              onClose={() => setShowArtifacts(false)}
+            />
           )}
           {showAKB && (
             <div className="w-80 border-l border-border bg-card">

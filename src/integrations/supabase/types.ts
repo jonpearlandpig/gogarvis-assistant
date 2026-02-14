@@ -58,43 +58,82 @@ export type Database = {
           },
         ]
       }
-      artifacts: {
+      artifact_versions: {
         Row: {
-          content: string
-          conversation_id: string
+          actor: string
+          ai_decision_id: string | null
+          artifact_id: string
+          content_md: string
           created_at: string
           id: string
+          telauthorium_id: string
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          actor?: string
+          ai_decision_id?: string | null
+          artifact_id: string
+          content_md: string
+          created_at?: string
+          id?: string
+          telauthorium_id: string
+          user_id: string
+          version_number: number
+        }
+        Update: {
+          actor?: string
+          ai_decision_id?: string | null
+          artifact_id?: string
+          content_md?: string
+          created_at?: string
+          id?: string
+          telauthorium_id?: string
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artifact_versions_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "artifacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      artifacts: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          id: string
+          project_id: string | null
+          status: string
           title: string
           type: string
           user_id: string
         }
         Insert: {
-          content: string
-          conversation_id: string
+          conversation_id?: string | null
           created_at?: string
           id?: string
+          project_id?: string | null
+          status?: string
           title: string
           type?: string
           user_id: string
         }
         Update: {
-          content?: string
-          conversation_id?: string
+          conversation_id?: string | null
           created_at?: string
           id?: string
+          project_id?: string | null
+          status?: string
           title?: string
           type?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "artifacts_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       conversations: {
         Row: {
