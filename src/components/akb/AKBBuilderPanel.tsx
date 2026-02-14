@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useAKBBuilder } from "@/hooks/useAKBBuilder";
 import { useAuth } from "@/hooks/useAuth";
 import { AKB_DOMAINS } from "@/lib/akbBuilder";
+import { uploadAKBFile } from "@/lib/akbUpload";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
 
 export function AKBBuilderPanel({
   workspaceId,
@@ -18,6 +20,7 @@ export function AKBBuilderPanel({
   const [noteDomain, setNoteDomain] = useState("identity");
   const [noteTitle, setNoteTitle] = useState("");
   const [noteBody, setNoteBody] = useState("");
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   const approvedCount = useMemo(
     () => akb.drafts.filter((d) => d.status === "approved").length,
@@ -30,6 +33,21 @@ export function AKBBuilderPanel({
     scope: workspaceId ? "workspace" : "system",
     approval_chain: [],
   };
+
+  async function handleFiles(files: FileList | null) {
+    if (!files || !user?.id) return;
+    const arr = Array.from(files);
+    try {
+      for (const f of arr) {
+        await uploadAKBFile({ userId: user.id, workspaceId, file: f });
+      }
+      toast.success(`Uploaded ${arr.length} file(s) to AKB Inbox`);
+      await akb.refetch();
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Upload failed");
+    }
+  }
 
   return (
     <div className="w-[520px] border-l border-border bg-background p-3 space-y-3">
@@ -62,6 +80,40 @@ export function AKBBuilderPanel({
 
       {tab === "inbox" && (
         <div className="space-y-2">
+          <div
+            className="border border-dashed border-border rounded p-3 text-xs text-muted-foreground"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={async (e) => {
+              e.preventDefault();
+              await handleFiles(e.dataTransfer.files);
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="font-mono text-[11px]">Drop files here</div>
+              <button
+                className="text-xs border border-border rounded px-2 py-1 hover:bg-muted/40 text-foreground"
+                onClick={() => fileRef.current?.click()}
+              >
+                Choose Files
+              </button>
+            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={async (e) => {
+                await handleFiles(e.target.files);
+                if (e.target) e.target.value = "";
+              }}
+            />
+            <div className="mt-2 text-[10px]">
+              PDFs, docs, CSVs, images, audio — stored in bucket{" "}
+              <span className="font-mono">akb</span> and indexed in{" "}
+              <span className="font-mono">akb_uploads</span>.
+            </div>
+          </div>
+
           <div className="text-xs font-mono text-foreground">
             Quick Note → Draft
           </div>
