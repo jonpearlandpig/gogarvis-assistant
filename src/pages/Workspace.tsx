@@ -22,6 +22,7 @@ import { useArtifacts } from "@/hooks/useArtifacts";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAKBIntakeGate } from "@/hooks/useAKBIntakeGate";
 import { useAKBDomains } from "@/hooks/useAKBDomains";
+import { useAKBStructure } from "@/hooks/useAKBStructure";
 import { useOnboardingGate } from "@/hooks/useOnboardingGate";
 import { streamChat, type AKBMeta } from "@/lib/stream-chat";
 import { toast } from "sonner";
@@ -60,6 +61,7 @@ const Workspace = () => {
   const [akbMode, setAKBMode] = useState<"locked" | "foundation" | "full">("locked");
   const [akbCoverage, setAKBCoverage] = useState<number>(0);
   const akbDomains = useAKBDomains(user?.id || null);
+  const akbStructure = useAKBStructure(user?.id || null, null);
   const prevCompletedCount = useRef(0);
   const foundationLock = akbMode !== "full";
 
@@ -375,6 +377,7 @@ const Workspace = () => {
               userId={user?.id}
               workspaceId={null}
               onFilesUploaded={() => gate.refetch()}
+              structureEntries={akbStructure.entries}
             />
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden">

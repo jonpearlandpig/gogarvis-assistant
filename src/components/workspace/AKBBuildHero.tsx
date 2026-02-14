@@ -5,6 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { uploadAKBFile } from "@/lib/akbUpload";
 import { toast } from "sonner";
 import garvisLogoWhite from "@/assets/garvis_logo_white.png";
+import { AKBStructurePanel } from "@/components/akb/AKBStructurePanel";
+import type { StructureEntry } from "@/components/akb/AKBStructurePanel";
 
 interface AKBBuildHeroProps {
   isStreaming: boolean;
@@ -12,6 +14,7 @@ interface AKBBuildHeroProps {
   userId?: string;
   workspaceId?: string | null;
   onFilesUploaded?: () => void;
+  structureEntries?: StructureEntry[];
 }
 
 export function AKBBuildHero({
@@ -20,9 +23,11 @@ export function AKBBuildHero({
   userId,
   workspaceId,
   onFilesUploaded,
+  structureEntries = [],
 }: AKBBuildHeroProps) {
   const [input, setInput] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showStructure, setShowStructure] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = () => {
@@ -149,11 +154,26 @@ export function AKBBuildHero({
           </div>
         </div>
 
-        {/* Subtle tagline */}
-        <p className="text-center text-xs text-muted-foreground font-mono tracking-wide">
-          Lift the learner. Launch the leader.
-        </p>
+        {/* View Structure + tagline */}
+        <div className="flex items-center justify-center gap-4">
+          <button
+            onClick={() => setShowStructure(true)}
+            className="text-xs text-muted-foreground hover:text-foreground font-mono transition-colors"
+          >
+            View Structure
+          </button>
+          <span className="text-[10px] text-muted-foreground/40">•</span>
+          <p className="text-xs text-muted-foreground font-mono tracking-wide">
+            Lift the learner. Launch the leader.
+          </p>
+        </div>
       </div>
+
+      <AKBStructurePanel
+        open={showStructure}
+        onClose={() => setShowStructure(false)}
+        entries={structureEntries}
+      />
     </div>
   );
 }
