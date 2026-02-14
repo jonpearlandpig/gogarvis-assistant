@@ -221,6 +221,65 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profile_versions: {
+        Row: {
+          config_json: Json
+          created_at: string
+          id: string
+          telauthorium_id: string
+          user_id: string
+          user_profile_id: string
+          version_number: number
+        }
+        Insert: {
+          config_json: Json
+          created_at?: string
+          id?: string
+          telauthorium_id: string
+          user_id: string
+          user_profile_id: string
+          version_number: number
+        }
+        Update: {
+          config_json?: Json
+          created_at?: string
+          id?: string
+          telauthorium_id?: string
+          user_id?: string
+          user_profile_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_profile_versions_user_profile_id_fkey"
+            columns: ["user_profile_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_profiles: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
