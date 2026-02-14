@@ -1,0 +1,1 @@
+GRANT UPDATE ON public.user_profiles TO authenticated;
