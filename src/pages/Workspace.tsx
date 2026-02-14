@@ -4,6 +4,7 @@ import { ChatPanel } from "@/components/workspace/ChatPanel";
 import { ArtifactPanel } from "@/components/workspace/ArtifactPanel";
 import { AKBPanel } from "@/components/workspace/AKBPanel";
 import { ProfilePanel } from "@/components/workspace/ProfilePanel";
+import { AKBBuilderPanel } from "@/components/akb/AKBBuilderPanel";
 import { useConversations } from "@/hooks/useConversations";
 import { useMessages } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,7 +12,7 @@ import { useArtifacts } from "@/hooks/useArtifacts";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { streamChat } from "@/lib/stream-chat";
 import { toast } from "sonner";
-import { PanelRight, Database, User } from "lucide-react";
+import { PanelRight, Database, User, Hammer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UOPBadge } from "@/components/profile/UOPBadge";
 
@@ -24,6 +25,7 @@ const Workspace = () => {
   const [showArtifacts, setShowArtifacts] = useState(false);
   const [showAKB, setShowAKB] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showAKBBuilder, setShowAKBBuilder] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const {
@@ -105,6 +107,13 @@ const Workspace = () => {
     fetchVersions(a.id);
   };
 
+  const closePanels = () => {
+    setShowProfile(false);
+    setShowAKB(false);
+    setShowArtifacts(false);
+    setShowAKBBuilder(false);
+  };
+
   return (
     <div className="flex h-screen w-full bg-background">
       <ConversationSidebar
@@ -123,36 +132,45 @@ const Workspace = () => {
         <div className="flex items-center justify-between border-b border-border px-4 py-2">
           <UOPBadge
             version={uopVersion}
-            onClick={() => { setShowProfile(!showProfile); if (!showProfile) { setShowAKB(false); setShowArtifacts(false); } }}
+            onClick={() => { const next = !showProfile; closePanels(); if (next) setShowProfile(true); }}
           />
           <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => { setShowProfile(!showProfile); if (!showProfile) { setShowAKB(false); setShowArtifacts(false); } }}
-            className="gap-2 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <User className="h-4 w-4" />
-            Profile
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => { setShowAKB(!showAKB); if (!showAKB) { setShowArtifacts(false); setShowProfile(false); } }}
-            className="gap-2 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <Database className="h-4 w-4" />
-            AKB
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => { setShowArtifacts(!showArtifacts); if (!showArtifacts) { setShowAKB(false); setShowProfile(false); } }}
-            className="gap-2 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <PanelRight className="h-4 w-4" />
-            Artifacts
-          </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { const next = !showProfile; closePanels(); if (next) setShowProfile(true); }}
+              className="gap-2 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <User className="h-4 w-4" />
+              Profile
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { const next = !showAKB; closePanels(); if (next) setShowAKB(true); }}
+              className="gap-2 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <Database className="h-4 w-4" />
+              AKB
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { const next = !showAKBBuilder; closePanels(); if (next) setShowAKBBuilder(true); }}
+              className="gap-2 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <Hammer className="h-4 w-4" />
+              AKB Builder
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { const next = !showArtifacts; closePanels(); if (next) setShowArtifacts(true); }}
+              className="gap-2 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <PanelRight className="h-4 w-4" />
+              Artifacts
+            </Button>
           </div>
         </div>
 
@@ -166,8 +184,8 @@ const Workspace = () => {
               onCreateArtifact={(content) => {
                 const title = content.slice(0, 50).replace(/[#*_\n]/g, "").trim() || "Untitled";
                 createArtifact(title, "text", content);
+                closePanels();
                 setShowArtifacts(true);
-                setShowAKB(false);
                 toast.success("Artifact created");
               }}
             />
@@ -186,6 +204,9 @@ const Workspace = () => {
             <div className="w-80 border-l border-border bg-card">
               <AKBPanel conversationId={activeConvId} />
             </div>
+          )}
+          {showAKBBuilder && (
+            <AKBBuilderPanel workspaceId={activeConvId ?? null} />
           )}
           {showProfile && (
             <ProfilePanel
