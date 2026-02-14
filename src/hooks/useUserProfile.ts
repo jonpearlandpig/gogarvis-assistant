@@ -37,11 +37,11 @@ export function useUserProfile(userId: string | null) {
     if (!userId) { setLoading(false); return; }
 
     // Get or create root profile
-    let { data: profiles } = await supabase
+    let { data: profiles } = await (supabase
       .from("user_profiles")
       .select("id, name")
       .eq("user_id", userId)
-      .limit(1);
+      .limit(1) as any);
 
     let rootId = profiles?.[0]?.id;
 
@@ -96,11 +96,12 @@ export function useUserProfile(userId: string | null) {
 
   const renameProfile = useCallback(async (name: string) => {
     if (!profileId) return;
-    const { error } = await supabase
+    const { error } = await (supabase
       .from("user_profiles")
-      .update({ name } as any)
-      .eq("id", profileId);
+      .update({ name })
+      .eq("id", profileId) as any);
     if (error) {
+      console.error("Rename error:", error);
       toast.error("Failed to rename profile");
       return;
     }
