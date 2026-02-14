@@ -294,6 +294,71 @@ export type Database = {
         }
         Relationships: []
       }
+      akb_project_context: {
+        Row: {
+          domain_key: string
+          field_key: string
+          id: string
+          project_id: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+          value: string | null
+        }
+        Insert: {
+          domain_key: string
+          field_key: string
+          id?: string
+          project_id: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+          value?: string | null
+        }
+        Update: {
+          domain_key?: string
+          field_key?: string
+          id?: string
+          project_id?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "akb_project_context_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "akb_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      akb_projects: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       akb_proof_gates: {
         Row: {
           evidence_json: Json
@@ -464,6 +529,45 @@ export type Database = {
           url?: string
           user_id?: string
           workspace_id?: string | null
+        }
+        Relationships: []
+      }
+      akb_user_canonical: {
+        Row: {
+          communication_style: string | null
+          deal_breakers: string[] | null
+          decision_philosophy: string | null
+          id: string
+          pricing_posture: string | null
+          risk_profile: string | null
+          strategic_intent: string | null
+          tone_profile: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          communication_style?: string | null
+          deal_breakers?: string[] | null
+          decision_philosophy?: string | null
+          id?: string
+          pricing_posture?: string | null
+          risk_profile?: string | null
+          strategic_intent?: string | null
+          tone_profile?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          communication_style?: string | null
+          deal_breakers?: string[] | null
+          decision_philosophy?: string | null
+          id?: string
+          pricing_posture?: string | null
+          risk_profile?: string | null
+          strategic_intent?: string | null
+          tone_profile?: string | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }

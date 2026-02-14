@@ -1,0 +1,94 @@
+import { useState, useEffect, useCallback } from "react";
+import {
+  fetchCanonical,
+  upsertCanonical,
+  fetchProjects,
+  createProject,
+  fetchProjectContext,
+  upsertProjectContextField,
+  buildScopedAKB,
+  type CanonicalData,
+  type ProjectContextField,
+  type ScopedAKB,
+} from "@/lib/scoped-akb";
+import { toast } from "sonner";
+
+export function useScopedAKB(userId: string | null) {
+  const [canonical, setCanonical] = useState<CanonicalData | null>(null);
+  const [projects, setProjects] = useState<Array<{ id: string; name: string; status: string; created_at: string }>>([]);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [projectFields, setProjectFields] = useState<ProjectContextField[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    if (!userId) { setLoading(false); return; }
+    setLoading(true);
+    try {
+      const [c, p] = await Promise.all([fetchCanonical(userId), fetchProjects(userId)]);
+      setCanonical(c);
+      setProjects(p);
+    } catch (e) {
+      console.error("useScopedAKB fetch error:", e);
+    }
+    setLoading(false);
+  }, [userId]);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  // Load project context when active project changes
+  useEffect(() => {
+    if (!activeProjectId) { setProjectFields([]); return; }
+    fetchProjectContext(activeProjectId).then(setProjectFields).catch(console.error);
+  }, [activeProjectId]);
+
+  const scoped: ScopedAKB = buildScopedAKB(canonical, projectFields, activeProjectId);
+
+  const saveCanonical = useCallback(async (fields: Partial<CanonicalData>) => {
+    if (!userId) return;
+    try {
+      await upsertCanonical(userId, fields);
+      toast.success("Canonical AKB saved");
+      await refresh();
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to save canonical");
+    }
+  }, [userId, refresh]);
+
+  const addProject = useCallback(async (name: string) => {
+    if (!userId) return;
+    try {
+      const p = await createProject(userId, name);
+      toast.success(`Project "${p.name}" created`);
+      await refresh();
+      setActiveProjectId(p.id);
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to create project");
+    }
+  }, [userId, refresh]);
+
+  const saveProjectField = useCallback(async (domainKey: string, fieldKey: string, value: string) => {
+    if (!userId || !activeProjectId) return;
+    try {
+      await upsertProjectContextField(userId, activeProjectId, domainKey, fieldKey, value);
+      const updated = await fetchProjectContext(activeProjectId);
+      setProjectFields(updated);
+      toast.success("Project context saved");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to save project context");
+    }
+  }, [userId, activeProjectId]);
+
+  return {
+    canonical,
+    projects,
+    activeProjectId,
+    setActiveProjectId,
+    projectFields,
+    scoped,
+    loading,
+    saveCanonical,
+    addProject,
+    saveProjectField,
+    refresh,
+  };
+}
