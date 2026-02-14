@@ -302,49 +302,55 @@ const Workspace = () => {
       />
 
       {/* ── TOP BAR ── */}
-      <div className="h-12 shrink-0 border-b border-border flex items-center justify-between px-3">
-        <img src={garvisLogo} alt="goGARVIS" className="h-7" />
+      <div className="h-14 shrink-0 border-b border-border flex items-center justify-between px-4">
+        {/* Left: HUGE GARVIS logo */}
+        <img src={garvisLogo} alt="goGARVIS" className="h-10 sm:h-12" />
 
-        {gate.hasFirstDataset && (
-          <AKBStatusBar
-            domains={akbDomains.domains}
-            completedCount={akbDomains.completedCount}
-            total={akbDomains.total}
-            coveragePercent={akbDomains.coveragePercent}
-            nextDomain={akbDomains.nextDomain}
-            visible={true}
-          />
-        )}
+        {/* Center-right: AKB status (subtle, always visible after first dataset) */}
+        <div className="flex items-center gap-3">
+          {gate.hasFirstDataset && (
+            <AKBStatusBar
+              domains={akbDomains.domains}
+              completedCount={akbDomains.completedCount}
+              total={akbDomains.total}
+              coveragePercent={akbDomains.coveragePercent}
+              nextDomain={akbDomains.nextDomain}
+              visible={true}
+            />
+          )}
 
-        {builderOnly && (
-          <button
-            onClick={openAKBBuilder}
-            className={`flex items-center gap-2 text-xs px-2 py-1 rounded border border-border transition-colors ${
-              showAKBBuilder ? "bg-muted text-foreground" : "hover:bg-muted/40 text-muted-foreground"
-            }`}
-          >
-            <Hammer className="h-4 w-4" />
-            AKB Builder
-          </button>
-        )}
+          {/* Far right: AKB Builder button (only after first dataset, before graduation) */}
+          {builderOnly && (
+            <button
+              onClick={openAKBBuilder}
+              className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded border border-border transition-colors ${
+                showAKBBuilder ? "bg-muted text-foreground" : "hover:bg-muted/40 text-muted-foreground"
+              }`}
+            >
+              <Hammer className="h-4 w-4" />
+              AKB Builder
+            </button>
+          )}
 
-        {workspaceUnlocked && (
-          <div className="flex items-center gap-3">
-            <UOPBadge version={uopVersion} onClick={() => togglePanel("profile")} />
-            <button onClick={() => togglePanel("profile")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              Profile
-            </button>
-            <button onClick={() => togglePanel("akb")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              AKB
-            </button>
-            <button onClick={() => togglePanel("artifacts")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              Artifacts
-            </button>
-            <button onClick={createReceiptsReportArtifact} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              Receipts Report
-            </button>
-          </div>
-        )}
+          {/* Graduated: full nav */}
+          {workspaceUnlocked && (
+            <div className="flex items-center gap-3">
+              <UOPBadge version={uopVersion} onClick={() => togglePanel("profile")} />
+              <button onClick={() => togglePanel("profile")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                Profile
+              </button>
+              <button onClick={() => togglePanel("akb")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                AKB
+              </button>
+              <button onClick={() => togglePanel("artifacts")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                Artifacts
+              </button>
+              <button onClick={createReceiptsReportArtifact} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                Receipts Report
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <OperatorModeBanner
@@ -405,7 +411,7 @@ const Workspace = () => {
           )}
 
           {builderOnly && showAKBBuilder && (
-            <div className="w-[420px] border-l border-border">
+            <div className="absolute left-0 top-0 bottom-0 w-[420px] border-r border-border bg-background z-30 shadow-lg overflow-auto">
               <AKBBuilderPanel workspaceId={null} />
             </div>
           )}
