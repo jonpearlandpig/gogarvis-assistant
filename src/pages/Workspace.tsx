@@ -287,81 +287,57 @@ const Workspace = () => {
           </div>
         </div>
 
-        {/* ── Gated workspace view ── */}
-        {!workspaceRevealed ? (
-          <div className="flex flex-1 flex-col items-center justify-center text-center py-24 px-6 text-sm">
-            <div className="font-medium">
-              {akbMode === "full"
-                ? GARVIS_UI.foundationComplete.title
-                : GARVIS_UI.foundation.lockedWorkspace.title}
+        <div className="flex flex-1 flex-col overflow-hidden">
+          {user?.id && <ModuleNudge userId={user.id} />}
+          <div className="flex flex-1 overflow-hidden">
+            <div className="flex-1">
+              <ChatPanel
+                messages={messages}
+                isStreaming={isStreaming}
+                onSend={handleSend}
+                onStop={handleStop}
+                onCreateArtifact={async (content) => {
+                  if (!artifactsAllowed) {
+                    toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
+                    togglePanel("akbBuilder");
+                    return;
+                  }
+                  const title = content.slice(0, 50).replace(/[#*_\n]/g, "").trim() || "Untitled";
+                  await createArtifact(title, "text", content);
+                  togglePanel("artifacts");
+                  toast.success("Artifact created");
+                }}
+              />
             </div>
-            <div className="mt-2 text-muted-foreground">
-              {akbMode === "full"
-                ? GARVIS_UI.foundationComplete.body[0]
-                : GARVIS_UI.foundation.lockedWorkspace.body[0]}
-            </div>
-            <div className="mt-6">
-              <button onClick={() => togglePanel("akbBuilder")} className="text-xs underline">
-                {GARVIS_UI.foundation.cta}
-              </button>
-            </div>
-            <div className="mt-10 text-xs text-muted-foreground">
-              {GARVIS_UI.footerTagline}
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-1 flex-col overflow-hidden">
-            {user?.id && <ModuleNudge userId={user.id} />}
-            <div className="flex flex-1 overflow-hidden">
-              <div className="flex-1">
-                <ChatPanel
-                  messages={messages}
-                  isStreaming={isStreaming}
-                  onSend={handleSend}
-                  onStop={handleStop}
-                  onCreateArtifact={async (content) => {
-                    if (!artifactsAllowed) {
-                      toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
-                      togglePanel("akbBuilder");
-                      return;
-                    }
-                    const title = content.slice(0, 50).replace(/[#*_\n]/g, "").trim() || "Untitled";
-                    await createArtifact(title, "text", content);
-                    togglePanel("artifacts");
-                    toast.success("Artifact created");
-                  }}
-                />
+            {showArtifacts && (
+              <ArtifactPanel
+                artifacts={artifacts}
+                versions={versions}
+                onSelectArtifact={handleSelectArtifact}
+                onCreateArtifact={createArtifact}
+                onSaveVersion={saveNewVersion}
+                onClose={() => setShowArtifacts(false)}
+              />
+            )}
+            {showAKB && (
+              <div className="w-80 border-l border-border bg-card">
+                <AKBPanel conversationId={activeConvId} />
               </div>
-              {showArtifacts && (
-                <ArtifactPanel
-                  artifacts={artifacts}
-                  versions={versions}
-                  onSelectArtifact={handleSelectArtifact}
-                  onCreateArtifact={createArtifact}
-                  onSaveVersion={saveNewVersion}
-                  onClose={() => setShowArtifacts(false)}
-                />
-              )}
-              {showAKB && (
-                <div className="w-80 border-l border-border bg-card">
-                  <AKBPanel conversationId={activeConvId} />
-                </div>
-              )}
-              {showAKBBuilder && (
-                <AKBBuilderPanel workspaceId={activeConvId ?? null} />
-              )}
-              {showProfile && (
-                <ProfilePanel
-                  version={uopVersion}
-                  profileName={profileName}
-                  onSave={async (cfg) => { await saveProfile(cfg); }}
-                  onRename={async (n) => { await renameProfile(n); }}
-                  onClose={() => setShowProfile(false)}
-                />
-              )}
-            </div>
+            )}
+            {showAKBBuilder && (
+              <AKBBuilderPanel workspaceId={activeConvId ?? null} />
+            )}
+            {showProfile && (
+              <ProfilePanel
+                version={uopVersion}
+                profileName={profileName}
+                onSave={async (cfg) => { await saveProfile(cfg); }}
+                onRename={async (n) => { await renameProfile(n); }}
+                onClose={() => setShowProfile(false)}
+              />
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* ── Progression modals ── */}
