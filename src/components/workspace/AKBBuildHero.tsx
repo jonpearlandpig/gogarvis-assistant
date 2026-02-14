@@ -52,14 +52,14 @@ export function AKBBuildHero({
   };
 
   return (
-    <div className="flex-1 flex items-center justify-center p-6">
-      <div className="w-full max-w-xl space-y-10">
-        {/* Logo */}
+    <div className="flex-1 flex flex-col items-center justify-center p-6">
+      <div className="w-full max-w-2xl space-y-12">
+        {/* Logo — huge and prominent */}
         <div className="flex justify-center">
           <img
             src={garvisLogoBlack}
             alt="goGARVIS"
-            className="h-16"
+            className="h-28 sm:h-36 md:h-44 lg:h-52"
           />
         </div>
 
