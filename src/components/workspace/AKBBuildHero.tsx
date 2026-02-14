@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { uploadAKBFile } from "@/lib/akbUpload";
 import { toast } from "sonner";
-import garvisLogoWhite from "@/assets/garvis_logo_white.png";
+import garvisLogoBlack from "@/assets/garvis_logo_black.png";
 import { AKBStructurePanel } from "@/components/akb/AKBStructurePanel";
 import type { StructureEntry } from "@/components/akb/AKBStructurePanel";
 
@@ -57,9 +57,9 @@ export function AKBBuildHero({
         {/* Logo */}
         <div className="flex justify-center">
           <img
-            src={garvisLogoWhite}
+            src={garvisLogoBlack}
             alt="goGARVIS"
-            className="h-16 drop-shadow-[0_0_30px_hsl(190_95%_55%/0.25)]"
+            className="h-16"
           />
         </div>
 
