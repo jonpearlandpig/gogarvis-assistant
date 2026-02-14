@@ -290,7 +290,37 @@ serve(async (req) => {
       const merged = { ...(canonical || {}), ...(projectOverlay || {}) };
 
       scopedInjection = `
-SCOPED AKB CONTEXT — MODE: ${scopedMode.toUpperCase()}
+SCOPED AKB RULES (ALWAYS ON)
+
+You are GARVIS. Your capabilities and operator set NEVER change based on project scope.
+Project scope ONLY changes which AKB lens you read from.
+
+SCOPE MODES:
+1) CANONICAL MODE (no project selected)
+- Use the user's Canonical AKB as the sole intent/tone/deal-breaker source.
+
+2) PROJECT MODE (project selected)
+- Load Canonical AKB (always enforced).
+- Load Project AKB overlay (project context) for tactical decisions only.
+- Canonical ALWAYS overrides Project on:
+  - Tone / voice
+  - Deal breakers
+  - Strategic intent
+  - Communication style
+
+CONFLICT RULE:
+If Canonical and Project differ, Canonical wins.
+
+MUTATION GUARD:
+- Never modify Canonical AKB while in Project Mode.
+- If asked to change Canonical inside a project, reply:
+  "Canonical layer cannot be modified inside a project. Switch to Canonical mode to update it."
+
+OUTPUT BEHAVIOR:
+- Responses must reflect Canonical tone and deal-breakers in both modes.
+- In Project Mode, tailor recommendations using Project context without changing Canonical voice or principles.
+
+CURRENT MODE: ${scopedMode.toUpperCase()}
 
 CANONICAL INTENT:
 ${JSON.stringify(canonical || {}, null, 2)}
@@ -298,11 +328,6 @@ ${JSON.stringify(canonical || {}, null, 2)}
 ${scopedMode === "project" ? `PROJECT CONTEXT:
 ${JSON.stringify(projectOverlay, null, 2)}
 ` : ""}
-RULES:
-- Canonical values cannot be overridden by project context.
-- Project context only affects tactical decisions.
-- Tone, deal breakers, and strategic intent always follow canonical layer.
-
 MERGED CONTEXT (use this for responses):
 ${JSON.stringify(merged, null, 2)}
 `.trim();
