@@ -86,6 +86,36 @@ export type Database = {
         }
         Relationships: []
       }
+      akb_domains: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          domain_key: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          domain_key: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          domain_key?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       akb_drafts: {
         Row: {
           body_md: string
