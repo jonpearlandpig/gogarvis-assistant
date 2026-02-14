@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 
 interface Props {
   domainsComplete: number; // 0–6
+  coverage: number;        // 0–100
   visible?: boolean;
 }
 
@@ -15,11 +16,10 @@ const DOMAINS = [
   "Financial Model",
 ];
 
-export function AKBStatusBar({ domainsComplete, visible = true }: Props) {
+export function AKBStatusBar({ domainsComplete, coverage, visible = true }: Props) {
   if (!visible) return null;
 
   const total = 6;
-  const coverage = Math.floor((domainsComplete / total) * 100);
 
   return (
     <TooltipProvider>
@@ -48,6 +48,10 @@ export function AKBStatusBar({ domainsComplete, visible = true }: Props) {
                 />
               ))}
             </div>
+
+            <span className="text-[10px] font-mono text-muted-foreground">
+              {domainsComplete} / {total}
+            </span>
           </div>
         </TooltipTrigger>
 
@@ -55,10 +59,7 @@ export function AKBStatusBar({ domainsComplete, visible = true }: Props) {
           <div className="space-y-1.5">
             <div className="text-xs font-semibold">AKB Coverage</div>
             {DOMAINS.map((d, i) => (
-              <div
-                key={d}
-                className="flex items-center gap-2 text-xs"
-              >
+              <div key={d} className="flex items-center gap-2 text-xs">
                 <span
                   className={cn(
                     "text-[10px]",
