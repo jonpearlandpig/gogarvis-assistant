@@ -1,4 +1,19 @@
-import { Badge } from "@/components/ui/badge";
+function leadClasses(lead: string) {
+  switch (lead) {
+    case "systems":
+      return "bg-primary/10 text-primary border-primary/20";
+    case "creative":
+      return "bg-secondary/40 text-foreground border-border";
+    case "architect":
+      return "bg-muted text-foreground border-border";
+    case "business":
+      return "bg-accent/30 text-foreground border-border";
+    case "risk":
+      return "bg-destructive/10 text-destructive border-destructive/20";
+    default:
+      return "bg-muted text-foreground border-border";
+  }
+}
 
 export function UOPBadge({
   version,
@@ -41,9 +56,14 @@ export function UOPBadge({
       <span className="font-mono">UOP v{version.version_number}</span>
       <span className="font-mono opacity-70">{version.telauthorium_id?.slice(0, 12)}…</span>
       {lead && (
-        <Badge variant="secondary" className="text-[10px] px-2 py-0 font-mono">
+        <span
+          className={[
+            "rounded-full border px-2 py-[2px] font-mono text-[10px]",
+            leadClasses(lead),
+          ].join(" ")}
+        >
           Lead: {lead}
-        </Badge>
+        </span>
       )}
     </button>
   );
