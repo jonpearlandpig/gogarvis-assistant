@@ -47,37 +47,85 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Fetch user profile version for context injection
+    // ===========================================
+    // FETCH AUTHENTICATED USER
+    // ===========================================
     let profileInjection = "";
     const authHeader = req.headers.get("Authorization");
-    if (authHeader) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-      const sb = createClient(supabaseUrl, supabaseKey, {
-        global: { headers: { Authorization: authHeader } },
-      });
-      const { data: { user } } = await sb.auth.getUser();
-      if (user) {
-        const { data: profile } = await sb
-          .from("user_profile_versions")
-          .select("config_json")
-          .eq("user_id", user.id)
-          .order("version_number", { ascending: false })
-          .limit(1)
-          .single();
-        if (profile?.config_json) {
-          profileInjection = `The user's current profile configuration:\n${JSON.stringify(profile.config_json, null, 2)}`;
-        }
-      }
+    if (!authHeader) {
+      throw new Error("Missing Authorization header");
     }
 
-    const systemMessages: { role: string; content: string }[] = [
-      { role: "system", content: GARVIS_SYSTEM_PROMPT },
-    ];
-    if (profileInjection) {
-      systemMessages.push({ role: "system", content: profileInjection });
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, serviceKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("User not authenticated");
     }
 
+    // ===========================================
+    // FETCH LATEST UOP VERSION
+    // ===========================================
+    const { data: uopRow } = await supabase
+      .from("user_profile_versions")
+      .select("config_json, version_number, telauthorium_id")
+      .eq("user_id", user.id)
+      .order("version_number", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const uop = uopRow?.config_json as any;
+
+    if (uop) {
+      const focus = uop.pigpen_focus || {
+        systems: 0, creative: 0, architect: 0, business: 0, risk: 0,
+      };
+
+      const sum = focus.systems + focus.creative + focus.architect + focus.business + focus.risk || 1;
+
+      const norm = {
+        systems: Math.round((focus.systems / sum) * 100),
+        creative: Math.round((focus.creative / sum) * 100),
+        architect: Math.round((focus.architect / sum) * 100),
+        business: Math.round((focus.business / sum) * 100),
+        risk: Math.round((focus.risk / sum) * 100),
+      };
+
+      const lead = Object.entries(norm).sort((a, b) => b[1] - a[1])[0]?.[0];
+
+      profileInjection = `
+USER OPERATING PROFILE ACTIVE:
+Version: v${uopRow.version_number}
+Telauthorium ID: ${uopRow.telauthorium_id}
+
+Phase Bias: ${uop.phase_bias || "none"}
+Objective: ${uop.objective || ""}
+Tone: ${uop.tone || "default"}
+Include Risk Review: ${uop.include_risk_review ?? false}
+Advanced Notes: ${uop.advanced_notes || ""}
+
+PIG PEN FOCUS MIX (Normalized):
+Systems: ${norm.systems}%
+Creative: ${norm.creative}%
+Architect: ${norm.architect}%
+Business: ${norm.business}%
+Risk: ${norm.risk}%
+
+Lead Lens: ${lead}
+
+COMPOSITION RULE:
+Lead with the highest weighted lens.
+Shape the response accordingly.
+`;
+    }
+
+    // ===========================================
+    // MODEL CALL
+    // ===========================================
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
@@ -89,7 +137,10 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
           messages: [
-            ...systemMessages,
+            { role: "system", content: GARVIS_SYSTEM_PROMPT },
+            ...(profileInjection
+              ? [{ role: "system", content: profileInjection }]
+              : []),
             ...messages,
           ],
           stream: true,
