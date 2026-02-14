@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.notify-signup]
 verify_jwt = false
+
+[functions.module-detection]
+verify_jwt = false

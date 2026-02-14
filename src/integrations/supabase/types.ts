@@ -437,6 +437,99 @@ export type Database = {
         }
         Relationships: []
       }
+      garvis_module_detections: {
+        Row: {
+          confidence: number
+          created_at: string
+          id: string
+          module_key: string
+          signal_json: Json
+          source_id: string | null
+          source_type: string
+          user_id: string
+        }
+        Insert: {
+          confidence: number
+          created_at?: string
+          id?: string
+          module_key: string
+          signal_json?: Json
+          source_id?: string | null
+          source_type: string
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          id?: string
+          module_key?: string
+          signal_json?: Json
+          source_id?: string | null
+          source_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      garvis_modules: {
+        Row: {
+          activation_threshold: number
+          created_at: string
+          description: string
+          display_name: string
+          id: string
+          module_key: string
+        }
+        Insert: {
+          activation_threshold?: number
+          created_at?: string
+          description: string
+          display_name: string
+          id?: string
+          module_key: string
+        }
+        Update: {
+          activation_threshold?: number
+          created_at?: string
+          description?: string
+          display_name?: string
+          id?: string
+          module_key?: string
+        }
+        Relationships: []
+      }
+      garvis_user_modules: {
+        Row: {
+          activated_at: string | null
+          activation_score: number | null
+          confidence: number | null
+          created_at: string
+          id: string
+          module_key: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          activation_score?: number | null
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          module_key: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          activation_score?: number | null
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          module_key?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
