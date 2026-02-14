@@ -110,6 +110,7 @@ const Workspace = () => {
           remove(id);
           if (activeConvId === id) setActiveConvId(null);
         }}
+        onRename={(id, title) => updateTitle(id, title)}
       />
 
       <div className="flex flex-1 flex-col">
