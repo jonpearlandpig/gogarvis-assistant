@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { Hammer } from "lucide-react";
 import { buildReceiptReportArtifactSeed } from "@/lib/receiptsToArtifact";
 import { UOPBadge } from "@/components/profile/UOPBadge";
+import { AKBStatusBar } from "@/components/akb/AKBStatusBar";
 import { runModuleDetection } from "@/lib/module-detection-client";
 import { computeJournalScore } from "@/lib/journal-signal";
 import garvisLogo from "@/assets/garvis_logo_white.png";
@@ -224,6 +225,10 @@ const Workspace = () => {
               setAKBCoverage(meta.akbCoverage);
             }
 
+            if (meta?.akbCoverage && meta.akbCoverage % 16 === 0) {
+              toast.success(`Domain Complete — AKB Coverage: ${meta.akbCoverage}%`);
+            }
+
             if (fullResponse && convId) {
               await addMessage("assistant", fullResponse);
             }
@@ -287,6 +292,13 @@ const Workspace = () => {
       {/* ── TOP BAR ── */}
       <div className="h-12 shrink-0 border-b border-border flex items-center justify-between px-3">
         <img src={garvisLogo} alt="goGARVIS" className="h-7" />
+
+        {gate.hasFirstDataset && (
+          <AKBStatusBar
+            domainsComplete={Math.floor((akbCoverage / 100) * 6)}
+            visible={true}
+          />
+        )}
 
         {builderOnly && (
           <button
