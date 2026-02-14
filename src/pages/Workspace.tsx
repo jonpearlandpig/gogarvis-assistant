@@ -13,12 +13,14 @@ import {
 } from "@/components/workspace/ProgressionModals";
 import { ModuleNudge } from "@/components/modules/ModuleNudge";
 import { ChatIntakeUpload } from "@/components/chat/ChatIntakeUpload";
+import { EntryLevelGate } from "@/components/onboarding/EntryLevelGate";
 import { useConversations } from "@/hooks/useConversations";
 import { useMessages } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useArtifacts } from "@/hooks/useArtifacts";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAKBIntakeGate } from "@/hooks/useAKBIntakeGate";
+import { useOnboardingGate } from "@/hooks/useOnboardingGate";
 import { streamChat, type AKBMeta } from "@/lib/stream-chat";
 import { toast } from "sonner";
 import { Hammer } from "lucide-react";
@@ -55,10 +57,12 @@ const Workspace = () => {
   const [akbCoverage, setAKBCoverage] = useState<number>(0);
   const foundationLock = akbMode !== "full";
 
-  // ─── Intake gate ────────────────────────────────────────
+  // ─── Gates ──────────────────────────────────────────────
   const gate = useAKBIntakeGate(user?.id || null, null);
+  const onboarding = useOnboardingGate(user?.id || null);
 
   // ─── Explicit UI phases ─────────────────────────────────
+  const showEntryGate = !!user?.id && !onboarding.loading && onboarding.entryLevel === "unset";
   const chatOnly = !gate.hasFirstDataset;
   const builderOnly = gate.hasFirstDataset && foundationLock;
   const workspaceUnlocked = gate.hasFirstDataset && !foundationLock;
@@ -259,11 +263,25 @@ const Workspace = () => {
   // ─── Render ─────────────────────────────────────────────
   return (
     <div className="flex h-screen w-full flex-col bg-background">
+      {/* ── Entry Level Gate (first login) ── */}
+      <EntryLevelGate
+        open={showEntryGate}
+        onChoose={async (level) => {
+          await onboarding.choose(level);
+          if (level === "already_building") {
+            toast.message("Bulk intake ready. Upload documents or add websites.");
+            setShowAKBBuilder(true);
+          } else {
+            toast.message("Let's build your foundation.");
+            setShowAKBBuilder(false);
+          }
+        }}
+      />
+
       {/* ── TOP BAR ── */}
       <div className="h-12 shrink-0 border-b border-border flex items-center justify-between px-3">
         <div className="text-xs font-semibold tracking-wide text-foreground">GARVIS</div>
 
-        {/* Hammer: ONLY in builderOnly phase */}
         {builderOnly && (
           <button
             onClick={openAKBBuilder}
@@ -276,7 +294,6 @@ const Workspace = () => {
           </button>
         )}
 
-        {/* Full nav: ONLY when workspace unlocked */}
         {workspaceUnlocked && (
           <div className="flex items-center gap-3">
             <UOPBadge version={uopVersion} onClick={() => togglePanel("profile")} />
@@ -296,7 +313,6 @@ const Workspace = () => {
         )}
       </div>
 
-      {/* Operator Mode Banner */}
       <OperatorModeBanner
         open={showOperatorBanner}
         onClose={() => setShowOperatorBanner(false)}
@@ -304,7 +320,6 @@ const Workspace = () => {
 
       {/* ── BODY ── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left sidebar: ONLY after graduation */}
         {workspaceUnlocked && (
           <ConversationSidebar
             conversations={conversations}
@@ -319,9 +334,7 @@ const Workspace = () => {
           />
         )}
 
-        {/* Main content */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Chat: ALWAYS visible */}
           <div className="flex-1 flex flex-col overflow-hidden">
             {user?.id && <ModuleNudge userId={user.id} />}
             <ChatPanel
@@ -341,7 +354,6 @@ const Workspace = () => {
               }}
             />
 
-            {/* Intake nudge: ONLY before first dataset */}
             {chatOnly && user?.id && (
               <div className="border-t border-border px-4 py-3 text-center">
                 <p className="text-xs text-muted-foreground mb-2">
@@ -356,14 +368,12 @@ const Workspace = () => {
             )}
           </div>
 
-          {/* AKB Builder panel: ONLY in builderOnly + user clicked */}
           {builderOnly && showAKBBuilder && (
             <div className="w-[420px] border-l border-border">
               <AKBBuilderPanel workspaceId={null} />
             </div>
           )}
 
-          {/* Unlocked panels */}
           {workspaceUnlocked && (
             <>
               {showArtifacts && (
