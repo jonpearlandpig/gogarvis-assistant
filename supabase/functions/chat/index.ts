@@ -215,7 +215,8 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const body = await req.json();
+    const { messages, project_id, intent } = body;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -248,6 +249,66 @@ serve(async (req) => {
     }
 
     const user = { id: claimsData.claims.sub as string };
+
+    // ===========================================
+    // SCOPED AKB: Canonical + Project context
+    // ===========================================
+    let scopedInjection = "";
+    let scopedMode: "canonical" | "project" = "canonical";
+
+    try {
+      const { data: canonical } = await supabase
+        .from("akb_user_canonical")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      let projectOverlay: Record<string, string> | null = null;
+
+      if (project_id) {
+        // Guard: block canonical mutation inside project scope
+        if (intent === "update_canonical") {
+          return new Response(
+            JSON.stringify({ error: "Canonical layer cannot be modified inside project scope." }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        scopedMode = "project";
+        const { data: ctxRows } = await supabase
+          .from("akb_project_context")
+          .select("*")
+          .eq("project_id", project_id)
+          .eq("status", "complete");
+
+        projectOverlay = (ctxRows || []).reduce((acc: Record<string, string>, row: any) => {
+          acc[row.field_key] = row.value;
+          return acc;
+        }, {});
+      }
+
+      const merged = { ...(canonical || {}), ...(projectOverlay || {}) };
+
+      scopedInjection = `
+SCOPED AKB CONTEXT — MODE: ${scopedMode.toUpperCase()}
+
+CANONICAL INTENT:
+${JSON.stringify(canonical || {}, null, 2)}
+
+${scopedMode === "project" ? `PROJECT CONTEXT:
+${JSON.stringify(projectOverlay, null, 2)}
+` : ""}
+RULES:
+- Canonical values cannot be overridden by project context.
+- Project context only affects tactical decisions.
+- Tone, deal breakers, and strategic intent always follow canonical layer.
+
+MERGED CONTEXT (use this for responses):
+${JSON.stringify(merged, null, 2)}
+`.trim();
+    } catch (e) {
+      console.error("Scoped AKB fetch failed:", e);
+    }
 
     // ===========================================
     // AKB SOFT MODE CHECK
@@ -336,6 +397,9 @@ Shape the response accordingly.
           model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: GARVIS_SYSTEM_PROMPT },
+            ...(scopedInjection
+              ? [{ role: "system", content: scopedInjection }]
+              : []),
             ...(profileInjection
               ? [{ role: "system", content: profileInjection }]
               : []),
