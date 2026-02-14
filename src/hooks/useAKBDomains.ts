@@ -40,17 +40,43 @@ export function useAKBDomains(userId: string | null): AKBDomainState {
     }
 
     setLoading(true);
-    const { data } = await supabase
-      .from("akb_domains")
-      .select("domain_key, status, completed_at")
-      .eq("user_id", userId);
 
-    const map = new Map((data || []).map((r: any) => [r.domain_key, r]));
+    // Fetch all three sources in parallel
+    const [domainsRes, draftsRes, lawRes] = await Promise.all([
+      supabase
+        .from("akb_domains")
+        .select("domain_key, status, completed_at")
+        .eq("user_id", userId),
+      supabase
+        .from("akb_drafts")
+        .select("domain, status")
+        .eq("user_id", userId)
+        .not("status", "eq", "rejected"),
+      supabase
+        .from("akb_law")
+        .select("domain")
+        .eq("user_id", userId),
+    ]);
+
+    const domainMap = new Map((domainsRes.data || []).map((r: any) => [r.domain_key, r]));
+
+    // Build sets of domains that have law entries or non-rejected drafts
+    const lawDomains = new Set((lawRes.data || []).map((r: any) => r.domain));
+    const draftDomains = new Set((draftsRes.data || []).map((r: any) => r.domain));
+
     const merged: DomainStatus[] = ORDERED_DOMAINS.map((d) => {
-      const row = map.get(d);
-      return row
-        ? { domain_key: d, status: row.status as DomainStatus["status"], completed_at: row.completed_at }
-        : { domain_key: d, status: "empty" as const, completed_at: null };
+      const row = domainMap.get(d);
+      if (row) {
+        return { domain_key: d, status: row.status as DomainStatus["status"], completed_at: row.completed_at };
+      }
+      // Fallback: infer status from law/drafts when akb_domains row doesn't exist
+      if (lawDomains.has(d)) {
+        return { domain_key: d, status: "complete" as const, completed_at: null };
+      }
+      if (draftDomains.has(d)) {
+        return { domain_key: d, status: "draft" as const, completed_at: null };
+      }
+      return { domain_key: d, status: "empty" as const, completed_at: null };
     });
 
     setDomains(merged);
