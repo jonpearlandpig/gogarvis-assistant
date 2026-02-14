@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
-import { GARVIS_UI } from "@/lib/garvis-ui-strings";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { GARVIS_UI } from "@/lib/garvis-ui-strings";
 
-// ─── Shell ───────────────────────────────────────────────
 function ModalShell({
   open,
   onClose,
@@ -13,6 +12,7 @@ function ModalShell({
   children: React.ReactNode;
 }) {
   if (!open) return null;
+
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center">
       <div className="absolute inset-0 bg-background/80" onClick={onClose} />
@@ -35,11 +35,12 @@ export function FoundationCompleteModal({
     <ModalShell open={open} onClose={() => {}}>
       <div className="p-6">
         <div className="text-sm font-medium">{GARVIS_UI.foundationComplete.title}</div>
-        <div className="mt-2 text-sm text-muted-foreground space-y-1">
+        <div className="mt-2 space-y-1 text-sm text-muted-foreground">
           {GARVIS_UI.foundationComplete.body.map((line, i) => (
             <div key={i}>{line}</div>
           ))}
         </div>
+
         <div className="mt-6 flex items-center justify-end">
           <button onClick={onEnter} className="text-xs underline">
             {GARVIS_UI.foundationComplete.cta}
@@ -62,7 +63,8 @@ export function WorkspaceRevealModal({
     <ModalShell open={open} onClose={() => {}}>
       <div className="p-6">
         <div className="text-sm font-medium">{GARVIS_UI.workspaceReveal.title}</div>
-        <div className="mt-3 text-sm text-muted-foreground">
+
+        <div className="mt-3 space-y-1 text-sm text-muted-foreground">
           {GARVIS_UI.workspaceReveal.bullets.map((b, i) => (
             <div key={i} className="flex items-center gap-2">
               <span className="text-foreground">•</span>
@@ -70,6 +72,7 @@ export function WorkspaceRevealModal({
             </div>
           ))}
         </div>
+
         <div className="mt-6 flex items-center justify-end">
           <button onClick={onDone} className="text-xs underline">
             Continue
@@ -89,12 +92,14 @@ export function OperatorModeBanner({
   onClose: () => void;
 }) {
   if (!open) return null;
+
   return (
     <div className="w-full border-b border-border bg-muted/40 px-4 py-3 text-xs">
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="font-medium">{GARVIS_UI.operatorMode.bannerTitle}</div>
           <div className="text-muted-foreground">{GARVIS_UI.operatorMode.bannerBody}</div>
+
           <div className="mt-2 text-muted-foreground">{GARVIS_UI.operatorMode.unlocksLabel}</div>
           <div className="mt-1 text-muted-foreground">
             {GARVIS_UI.operatorMode.unlocks.map((u, i) => (
@@ -102,6 +107,7 @@ export function OperatorModeBanner({
             ))}
           </div>
         </div>
+
         <div className="flex flex-col items-end gap-2">
           <button
             onClick={() => {
@@ -134,6 +140,7 @@ export function SovereignRenameModal({
   onClose: () => void;
 }) {
   const [name, setName] = useState(currentName);
+
   useEffect(() => setName(currentName), [currentName]);
 
   return (
@@ -145,24 +152,22 @@ export function SovereignRenameModal({
         <div className="mt-4 text-sm text-muted-foreground">
           {GARVIS_UI.sovereignMode.capabilitiesLabel}
         </div>
-        <div className="mt-2 text-sm text-muted-foreground">
+        <div className="mt-2 space-y-1 text-sm text-muted-foreground">
           {GARVIS_UI.sovereignMode.capabilities.map((c, i) => (
             <div key={i}>• {c}</div>
           ))}
         </div>
 
         <div className="mt-6">
-          <div className="text-xs text-muted-foreground mb-1">{GARVIS_UI.renameScreen.title}</div>
+          <div className="mb-1 text-xs text-muted-foreground">{GARVIS_UI.renameScreen.title}</div>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full h-9 rounded-md border border-border bg-muted px-3 text-sm"
+            className="h-9 w-full rounded-md border border-border bg-muted px-3 text-sm"
             placeholder="Enter a name..."
             maxLength={32}
           />
-          <div className="mt-2 text-xs text-muted-foreground">
-            {GARVIS_UI.renameScreen.subtitle}
-          </div>
+          <div className="mt-2 text-xs text-muted-foreground">{GARVIS_UI.renameScreen.subtitle}</div>
         </div>
 
         <div className="mt-6 flex items-center justify-end gap-4">
