@@ -19,10 +19,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Notify on new user signup
+      if (event === "SIGNED_IN" && session?.user) {
+        const isNewUser =
+          session.user.created_at &&
+          Date.now() - new Date(session.user.created_at).getTime() < 60000; // within last minute
+        if (isNewUser) {
+          supabase.functions.invoke("notify-signup", {
+            body: {
+              record: {
+                id: session.user.id,
+                email: session.user.email,
+                created_at: session.user.created_at,
+              },
+            },
+          }).catch(console.error);
+        }
+      }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
