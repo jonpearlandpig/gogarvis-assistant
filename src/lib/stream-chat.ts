@@ -32,13 +32,17 @@ export async function streamChat({
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
 
+  if (!token) {
+    throw new Error("User not authenticated");
+  }
+
   const scopePayload: ScopeContract = scope || { mode: "home", project_id: null, cross_project_allowed: true };
 
   const resp = await fetch(CHAT_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      Authorization: `Bearer ${token}`,
       apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     },
     body: JSON.stringify({ messages, scope: scopePayload }),
