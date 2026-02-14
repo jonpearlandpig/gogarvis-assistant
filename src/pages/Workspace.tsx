@@ -200,8 +200,7 @@ const Workspace = () => {
               onCreateArtifact={(content) => {
                 const title = content.slice(0, 50).replace(/[#*_\n]/g, "").trim() || "Untitled";
                 createArtifact(title, "text", content);
-                closePanels();
-                setShowArtifacts(true);
+                togglePanel("artifacts");
                 toast.success("Artifact created");
               }}
             />
