@@ -30,6 +30,7 @@ export interface UOPVersion {
 export function useUserProfile(userId: string | null) {
   const [version, setVersion] = useState<UOPVersion | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
+  const [profileName, setProfileName] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   const fetchLatest = useCallback(async () => {
@@ -38,7 +39,7 @@ export function useUserProfile(userId: string | null) {
     // Get or create root profile
     let { data: profiles } = await supabase
       .from("user_profiles")
-      .select("id")
+      .select("id, name")
       .eq("user_id", userId)
       .limit(1);
 
@@ -54,6 +55,7 @@ export function useUserProfile(userId: string | null) {
     }
 
     setProfileId(rootId || null);
+    setProfileName(profiles?.[0]?.name || "");
 
     if (rootId) {
       const { data: ver } = await supabase
@@ -92,5 +94,18 @@ export function useUserProfile(userId: string | null) {
     await fetchLatest();
   }, [userId, profileId, fetchLatest]);
 
-  return { version, loading, saveProfile };
+  const renameProfile = useCallback(async (name: string) => {
+    if (!profileId) return;
+    const { error } = await supabase
+      .from("user_profiles")
+      .update({ name } as any)
+      .eq("id", profileId);
+    if (error) {
+      toast.error("Failed to rename profile");
+      return;
+    }
+    setProfileName(name);
+  }, [profileId]);
+
+  return { version, loading, profileName, saveProfile, renameProfile };
 }
