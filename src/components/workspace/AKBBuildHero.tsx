@@ -59,7 +59,7 @@ export function AKBBuildHero({
           <img
             src={garvisLogoBlack}
             alt="goGARVIS"
-            className="h-28 sm:h-36 md:h-44 lg:h-52"
+            className="h-48 sm:h-64 md:h-80 lg:h-96"
           />
         </div>
 
