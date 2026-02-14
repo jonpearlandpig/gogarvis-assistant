@@ -24,7 +24,7 @@ import { useAKBIntakeGate } from "@/hooks/useAKBIntakeGate";
 import { useAKBDomains } from "@/hooks/useAKBDomains";
 import { useAKBStructure } from "@/hooks/useAKBStructure";
 import { useOnboardingGate } from "@/hooks/useOnboardingGate";
-import { streamChat, type AKBMeta } from "@/lib/stream-chat";
+import { streamChat, type AKBMeta, type ScopeContract } from "@/lib/stream-chat";
 import { toast } from "sonner";
 import { Hammer } from "lucide-react";
 import { buildReceiptReportArtifactSeed } from "@/lib/receiptsToArtifact";
@@ -33,6 +33,8 @@ import { AKBStatusBar } from "@/components/akb/AKBStatusBar";
 import { runModuleDetection } from "@/lib/module-detection-client";
 import { computeJournalScore } from "@/lib/journal-signal";
 import garvisLogo from "@/assets/garvis_logo_black.png";
+import { ScopeIndicator } from "@/components/workspace/ScopeIndicator";
+import { useScopedAKB } from "@/hooks/useScopedAKB";
 
 // ─── Helpers ──────────────────────────────────────────────
 const daysBetween = (a: Date, b: Date) =>
@@ -64,6 +66,17 @@ const Workspace = () => {
   const akbStructure = useAKBStructure(user?.id || null, null);
   const prevCompletedCount = useRef(0);
   const foundationLock = akbMode !== "full";
+
+  // Scoped AKB (canonical + projects)
+  const scopedAKB = useScopedAKB(user?.id || null);
+  const activeProject = scopedAKB.projects.find((p) => p.id === scopedAKB.activeProjectId) || null;
+  const scopeMode: "home" | "project" = scopedAKB.activeProjectId ? "project" : "home";
+
+  const currentScope: ScopeContract = useMemo(() => ({
+    mode: scopeMode,
+    project_id: scopedAKB.activeProjectId,
+    cross_project_allowed: scopeMode === "home",
+  }), [scopeMode, scopedAKB.activeProjectId]);
 
   // ─── Gates ──────────────────────────────────────────────
   const gate = useAKBIntakeGate(user?.id || null, null);
@@ -219,6 +232,7 @@ const Workspace = () => {
             ...messages.map((m) => ({ role: m.role, content: m.content })),
             { role: "user" as const, content: text },
           ],
+          scope: currentScope,
           onDelta: (chunk) => {
             fullResponse += chunk;
             updateLastAssistant(fullResponse);
@@ -254,7 +268,7 @@ const Workspace = () => {
         }
       }
     },
-    [activeConvId, messages, create, addMessage, appendLocal, updateLastAssistant, updateTitle]
+    [activeConvId, messages, create, addMessage, appendLocal, updateLastAssistant, updateTitle, currentScope]
   );
 
   const handleStop = () => {
@@ -303,10 +317,20 @@ const Workspace = () => {
 
       {/* ── TOP BAR ── */}
       <div className="h-14 shrink-0 border-b border-border flex items-center justify-between px-4">
-        {/* Left: HUGE GARVIS logo */}
-        <img src={garvisLogo} alt="goGARVIS" className="h-10 sm:h-12" />
+        {/* Left: GARVIS logo + scope indicator */}
+        <div className="flex items-center gap-4">
+          <img src={garvisLogo} alt="goGARVIS" className="h-10 sm:h-12" />
+          {workspaceUnlocked && (
+            <ScopeIndicator
+              mode={scopeMode}
+              activeProject={activeProject ? { id: activeProject.id, name: activeProject.name } : null}
+              projects={scopedAKB.projects.map((p) => ({ id: p.id, name: p.name }))}
+              onSelectProject={(id) => scopedAKB.setActiveProjectId(id)}
+            />
+          )}
+        </div>
 
-        {/* Center-right: AKB status (subtle, always visible after first dataset) */}
+        {/* Right: AKB status + controls */}
         <div className="flex items-center gap-3">
           {gate.hasFirstDataset && (
             <AKBStatusBar

@@ -45,7 +45,60 @@ const TARGET_DOMAINS = [
 ] as const;
 
 type AKBMode = "locked" | "foundation" | "full";
+type ScopeMode = "home" | "project";
 
+interface ScopeContract {
+  mode: ScopeMode;
+  project_id: string | null;
+  cross_project_allowed: boolean;
+}
+
+// --- Scope & AKB prompt (always injected) ---
+function buildScopePrompt(scope: ScopeContract, canonical: any, projectOverlay: any, merged: any) {
+  return `
+SCOPE & AKB RULES (ALWAYS ON)
+
+You are GARVIS. Your capabilities/operators never change. Only the AKB scope changes.
+
+CURRENT SCOPE: ${scope.mode.toUpperCase()}${scope.project_id ? ` (project_id: ${scope.project_id})` : ""}
+CROSS-PROJECT ALLOWED: ${scope.cross_project_allowed}
+
+SCOPES
+- HOME SCOPE: Use Canonical AKB only. You may pull info across projects ONLY when the user request explicitly requires it.
+- PROJECT SCOPE: Use Canonical AKB + this Project AKB overlay. Do NOT use other projects' info.
+
+BOUNDARIES
+- In PROJECT scope: if the user asks about something not present in this project's AKB/artifacts, respond:
+  "Not found in this project. Search other projects?"
+  Then ask the user to choose: (A) search other projects (B) switch to Home (C) add it to this project.
+- In HOME scope: if user mentions multiple deals/projects, you may propose selecting projects to pull from. Do not guess which projects; ask user to pick from a list.
+
+CONFLICT RULE
+- Canonical governs tone/intent/dealbreakers always.
+- Project overlay adds project-specific facts/constraints only.
+- If Canonical conflicts with Project: Canonical wins.
+
+NO SILENT CROSS-PROJECT LEAKAGE
+- Never use other project data while in PROJECT scope.
+- Never "assume" a deal belongs to a project without user selection.
+
+MUTATION GUARD
+- Never modify Canonical AKB while in Project Mode.
+- If asked to change Canonical inside a project, reply:
+  "Canonical layer cannot be modified inside a project. Switch to Canonical mode to update it."
+
+CANONICAL INTENT:
+${JSON.stringify(canonical || {}, null, 2)}
+
+${scope.mode === "project" && projectOverlay ? `PROJECT CONTEXT:
+${JSON.stringify(projectOverlay, null, 2)}
+` : ""}
+MERGED CONTEXT (use this for responses):
+${JSON.stringify(merged, null, 2)}
+`.trim();
+}
+
+// --- AKB soft-lock coaching prompt ---
 function buildAKBSoftModeSystemMessage(s: {
   mode: AKBMode;
   approvedCount: number;
@@ -216,14 +269,17 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { messages, project_id, intent } = body;
+    const { messages, scope: rawScope, intent } = body;
+
+    // Parse scope contract (default to home)
+    const scope: ScopeContract = rawScope || { mode: "home", project_id: null, cross_project_allowed: true };
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     // ===========================================
     // FETCH AUTHENTICATED USER
     // ===========================================
-    let profileInjection = "";
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -251,34 +307,38 @@ serve(async (req) => {
     const user = { id: claimsData.claims.sub as string };
 
     // ===========================================
+    // SCOPE ENFORCEMENT
+    // ===========================================
+
+    // Block canonical mutation inside project scope
+    if (scope.mode === "project" && intent === "update_canonical") {
+      return new Response(
+        JSON.stringify({ error: "Canonical layer cannot be modified inside project scope." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ===========================================
     // SCOPED AKB: Canonical + Project context
     // ===========================================
-    let scopedInjection = "";
-    let scopedMode: "canonical" | "project" = "canonical";
+    let canonical: any = null;
+    let projectOverlay: Record<string, string> | null = null;
+    let merged: any = {};
 
     try {
-      const { data: canonical } = await supabase
+      const { data: canonicalData } = await supabase
         .from("akb_user_canonical")
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      let projectOverlay: Record<string, string> | null = null;
+      canonical = canonicalData;
 
-      if (project_id) {
-        // Guard: block canonical mutation inside project scope
-        if (intent === "update_canonical") {
-          return new Response(
-            JSON.stringify({ error: "Canonical layer cannot be modified inside project scope." }),
-            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
-        }
-
-        scopedMode = "project";
+      if (scope.mode === "project" && scope.project_id) {
         const { data: ctxRows } = await supabase
           .from("akb_project_context")
           .select("*")
-          .eq("project_id", project_id)
+          .eq("project_id", scope.project_id)
           .eq("status", "complete");
 
         projectOverlay = (ctxRows || []).reduce((acc: Record<string, string>, row: any) => {
@@ -287,50 +347,7 @@ serve(async (req) => {
         }, {});
       }
 
-      const merged = { ...(canonical || {}), ...(projectOverlay || {}) };
-
-      scopedInjection = `
-SCOPED AKB RULES (ALWAYS ON)
-
-You are GARVIS. Your capabilities and operator set NEVER change based on project scope.
-Project scope ONLY changes which AKB lens you read from.
-
-SCOPE MODES:
-1) CANONICAL MODE (no project selected)
-- Use the user's Canonical AKB as the sole intent/tone/deal-breaker source.
-
-2) PROJECT MODE (project selected)
-- Load Canonical AKB (always enforced).
-- Load Project AKB overlay (project context) for tactical decisions only.
-- Canonical ALWAYS overrides Project on:
-  - Tone / voice
-  - Deal breakers
-  - Strategic intent
-  - Communication style
-
-CONFLICT RULE:
-If Canonical and Project differ, Canonical wins.
-
-MUTATION GUARD:
-- Never modify Canonical AKB while in Project Mode.
-- If asked to change Canonical inside a project, reply:
-  "Canonical layer cannot be modified inside a project. Switch to Canonical mode to update it."
-
-OUTPUT BEHAVIOR:
-- Responses must reflect Canonical tone and deal-breakers in both modes.
-- In Project Mode, tailor recommendations using Project context without changing Canonical voice or principles.
-
-CURRENT MODE: ${scopedMode.toUpperCase()}
-
-CANONICAL INTENT:
-${JSON.stringify(canonical || {}, null, 2)}
-
-${scopedMode === "project" ? `PROJECT CONTEXT:
-${JSON.stringify(projectOverlay, null, 2)}
-` : ""}
-MERGED CONTEXT (use this for responses):
-${JSON.stringify(merged, null, 2)}
-`.trim();
+      merged = { ...(canonical || {}), ...(projectOverlay || {}) };
     } catch (e) {
       console.error("Scoped AKB fetch failed:", e);
     }
@@ -343,12 +360,12 @@ ${JSON.stringify(merged, null, 2)}
       akb = await computeAKBStatus(supabase, user.id);
     } catch (e) {
       console.error("AKB status check failed:", e);
-      // fail-open to locked mode for safety
     }
 
     // ===========================================
     // FETCH LATEST UOP VERSION
     // ===========================================
+    let profileInjection = "";
     const { data: uopRow } = await supabase
       .from("user_profile_versions")
       .select("config_json, version_number, telauthorium_id")
@@ -403,8 +420,9 @@ Shape the response accordingly.
     }
 
     // ===========================================
-    // AKB soft-mode injection
+    // Build system messages
     // ===========================================
+    const scopePrompt = buildScopePrompt(scope, canonical, projectOverlay, merged);
     const akbSoftMsg = buildAKBSoftModeSystemMessage(akb);
 
     // ===========================================
@@ -422,9 +440,7 @@ Shape the response accordingly.
           model: "google/gemini-3-flash-preview",
           messages: [
             { role: "system", content: GARVIS_SYSTEM_PROMPT },
-            ...(scopedInjection
-              ? [{ role: "system", content: scopedInjection }]
-              : []),
+            { role: "system", content: scopePrompt },
             ...(profileInjection
               ? [{ role: "system", content: profileInjection }]
               : []),
@@ -469,7 +485,7 @@ Shape the response accordingly.
       .filter((r: any) => r.status === "complete")
       .map((r: any) => r.domain_key);
 
-    // Pass AKB mode to client via headers
+    // Pass AKB mode + scope to client via headers
     const headers = new Headers({
       ...corsHeaders,
       "Content-Type": "text/event-stream",
@@ -478,6 +494,8 @@ Shape the response accordingly.
       "X-AKB-Mode": akb.mode,
       "X-AKB-Coverage": String(akb.coveragePct),
       "X-AKB-Completed-Domains": JSON.stringify(completedDomains),
+      "X-Scope-Mode": scope.mode,
+      "X-Scope-Project-Id": scope.project_id || "",
     });
 
     return new Response(response.body, { headers });
