@@ -886,7 +886,12 @@ export type Database = {
       }
       ingest_proposals: {
         Row: {
+          applied_at: string | null
           created_at: string
+          edited_at: string | null
+          edited_payload_json: Json | null
+          edited_summary: string | null
+          editor_user_id: string | null
           id: string
           ingest_id: string
           payload_json: Json
@@ -899,7 +904,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          applied_at?: string | null
           created_at?: string
+          edited_at?: string | null
+          edited_payload_json?: Json | null
+          edited_summary?: string | null
+          editor_user_id?: string | null
           id?: string
           ingest_id: string
           payload_json?: Json
@@ -912,7 +922,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          applied_at?: string | null
           created_at?: string
+          edited_at?: string | null
+          edited_payload_json?: Json | null
+          edited_summary?: string | null
+          editor_user_id?: string | null
           id?: string
           ingest_id?: string
           payload_json?: Json
@@ -1235,6 +1250,19 @@ export type Database = {
     Functions: {
       akb_lock_domain: { Args: { p_domain_key: string }; Returns: undefined }
       gen_telauthorium_id: { Args: never; Returns: string }
+      ingest_apply_proposal: { Args: { p_proposal_id: string }; Returns: Json }
+      ingest_batch_set_status: {
+        Args: { p_ids: string[]; p_ingest_id: string; p_status: string }
+        Returns: undefined
+      }
+      ingest_update_proposal: {
+        Args: {
+          p_edited_payload: Json
+          p_edited_summary: string
+          p_proposal_id: string
+        }
+        Returns: undefined
+      }
       is_conversation_owner: { Args: { conv_id: string }; Returns: boolean }
       sha256_hex: { Args: { t: string }; Returns: string }
     }

@@ -8,6 +8,9 @@ import {
   updateProposalStatus,
   applyApprovedProposal,
   reclassifyIngestRun,
+  updateProposalEdit,
+  batchSetProposalStatus,
+  applyProposal,
   type IngestRun,
   type IngestEntity,
   type IngestProposal,
@@ -38,7 +41,6 @@ export function useIngestPipeline(userId: string | null, workspaceId: string | n
         return;
       }
 
-      // Fetch entities and proposals
       const [ents, props] = await Promise.all([
         fetchIngestEntities(newRun.id),
         fetchIngestProposals(newRun.id),
@@ -57,6 +59,12 @@ export function useIngestPipeline(userId: string | null, workspaceId: string | n
       setLoading(false);
     }
   }, [userId, workspaceId]);
+
+  const refetchProposals = useCallback(async () => {
+    if (!run) return;
+    const props = await fetchIngestProposals(run.id);
+    setProposals(props);
+  }, [run]);
 
   const approveProposal = useCallback(async (proposal: IngestProposal) => {
     if (!userId) return;
@@ -80,6 +88,60 @@ export function useIngestPipeline(userId: string | null, workspaceId: string | n
       );
     } catch (err: any) {
       toast.error(err?.message || "Failed to deny");
+    }
+  }, []);
+
+  const editProposal = useCallback(async (proposalId: string, editedSummary: string, editedPayload: any) => {
+    try {
+      await updateProposalEdit({ proposalId, editedSummary, editedPayload });
+      setProposals((prev) =>
+        prev.map((p) => p.id === proposalId
+          ? { ...p, status: "edited" as const, edited_summary: editedSummary, edited_payload_json: editedPayload }
+          : p
+        )
+      );
+      toast.success("Proposal updated");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save edits");
+    }
+  }, []);
+
+  const batchApprove = useCallback(async (ids: string[]) => {
+    if (!run || ids.length === 0) return;
+    try {
+      await batchSetProposalStatus({ ingestId: run.id, ids, status: "approved" });
+      setProposals((prev) =>
+        prev.map((p) => ids.includes(p.id) ? { ...p, status: "approved" as const } : p)
+      );
+      toast.success(`Approved ${ids.length} proposal(s)`);
+    } catch (err: any) {
+      toast.error(err?.message || "Batch approve failed");
+    }
+  }, [run]);
+
+  const batchDeny = useCallback(async (ids: string[]) => {
+    if (!run || ids.length === 0) return;
+    try {
+      await batchSetProposalStatus({ ingestId: run.id, ids, status: "denied" });
+      setProposals((prev) =>
+        prev.map((p) => ids.includes(p.id) ? { ...p, status: "denied" as const } : p)
+      );
+      toast.success(`Denied ${ids.length} proposal(s)`);
+    } catch (err: any) {
+      toast.error(err?.message || "Batch deny failed");
+    }
+  }, [run]);
+
+  const applyOne = useCallback(async (proposalId: string) => {
+    try {
+      const result = await applyProposal(proposalId);
+      setProposals((prev) =>
+        prev.map((p) => p.id === proposalId ? { ...p, status: "applied" as const } : p)
+      );
+      toast.success("Applied successfully");
+      return result;
+    } catch (err: any) {
+      toast.error(err?.message || "Apply failed");
     }
   }, []);
 
@@ -122,7 +184,12 @@ export function useIngestPipeline(userId: string | null, workspaceId: string | n
     startIngest,
     approveProposal,
     denyProposal,
+    editProposal,
+    batchApprove,
+    batchDeny,
+    applyOne,
     reclassify,
+    refetchProposals,
     reset,
   };
 }
