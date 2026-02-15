@@ -108,12 +108,38 @@ export function ConversationSidebar({ conversations, activeId, onSelect, onCreat
         </div>
       </ScrollArea>
 
-      {/* Footer */}
-      <div className="border-t border-sidebar-border p-3 space-y-2">
-        <div className="text-xs text-muted-foreground truncate px-1">
-          {user?.email}
+      {/* Footer — user profile */}
+      <div className="border-t border-sidebar-border p-3">
+        <div className="flex items-center gap-3">
+          {user?.user_metadata?.avatar_url ? (
+            <img
+              src={user.user_metadata.avatar_url}
+              alt="Profile"
+              className="h-8 w-8 shrink-0 rounded-full border border-border object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-xs font-medium text-muted-foreground">
+              {(user?.email?.[0] ?? "?").toUpperCase()}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            {user?.user_metadata?.full_name && (
+              <div className="truncate text-xs font-medium text-sidebar-foreground">
+                {user.user_metadata.full_name}
+              </div>
+            )}
+            <div className="truncate text-[11px] text-muted-foreground">
+              {user?.email}
+            </div>
+          </div>
         </div>
-        <Button onClick={signOut} variant="ghost" size="sm" className="w-full justify-start gap-2 text-xs text-muted-foreground hover:text-foreground">
+        <Button
+          onClick={signOut}
+          variant="ghost"
+          size="sm"
+          className="mt-2 w-full justify-start gap-2 text-xs text-muted-foreground hover:text-foreground"
+        >
           <LogOut className="h-3.5 w-3.5" />
           Sign Out
         </Button>
