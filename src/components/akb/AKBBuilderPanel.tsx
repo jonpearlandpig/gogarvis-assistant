@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAKBBuilder } from "@/hooks/useAKBBuilder";
 import { useAuth } from "@/hooks/useAuth";
 import { AKB_DOMAINS } from "@/lib/akbBuilder";
@@ -9,8 +9,10 @@ import { toast } from "sonner";
 
 export function AKBBuilderPanel({
   workspaceId,
+  initialStep,
 }: {
   workspaceId: string | null;
+  initialStep?: "identity" | "goals" | "offer" | "audience" | "assets" | "financial_model";
 }) {
   const { user } = useAuth();
   const akb = useAKBBuilder(user?.id || null, workspaceId);
@@ -18,10 +20,18 @@ export function AKBBuilderPanel({
   const [tab, setTab] = useState<
     "inbox" | "drafts" | "conflicts" | "law" | "gates"
   >("drafts");
-  const [noteDomain, setNoteDomain] = useState("identity");
+  const [noteDomain, setNoteDomain] = useState(initialStep ?? "identity");
   const [noteTitle, setNoteTitle] = useState("");
   const [noteBody, setNoteBody] = useState("");
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  // Sync noteDomain when initialStep changes (e.g. from SafeNextStep)
+  useEffect(() => {
+    if (initialStep) {
+      setNoteDomain(initialStep);
+      setTab("inbox");
+    }
+  }, [initialStep]);
 
   const approvedCount = useMemo(
     () => akb.drafts.filter((d) => d.status === "approved").length,
@@ -122,7 +132,7 @@ export function AKBBuilderPanel({
             <select
               className="text-xs border border-border rounded px-2 py-1 bg-background text-foreground"
               value={noteDomain}
-              onChange={(e) => setNoteDomain(e.target.value)}
+              onChange={(e) => setNoteDomain(e.target.value as typeof noteDomain)}
             >
               {AKB_DOMAINS.map((d) => (
                 <option key={d} value={d}>
