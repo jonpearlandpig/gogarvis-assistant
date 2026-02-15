@@ -112,6 +112,8 @@ export function ChatPanel({
   const handleSubmit = () => {
     const text = input.trim();
     if (!text || isStreaming) return;
+    // Scan for URL before clearing input so ingest prompt persists
+    urlIntake.scan(text);
     setInput("");
     onSend(text);
   };
@@ -341,7 +343,8 @@ export function ChatPanel({
               value={input}
               onChange={(e) => {
                 setInput(e.target.value);
-                urlIntake.scan(e.target.value);
+                // Only scan on user typing (non-empty), not on programmatic clear
+                if (e.target.value.trim()) urlIntake.scan(e.target.value);
               }}
               placeholder="Go Garvis!"
               className="min-h-[44px] max-h-32 resize-none bg-muted border-border font-mono text-sm"
