@@ -63,6 +63,44 @@ export function AKBBuildHero({
           />
         </div>
 
+        {/* Explainer */}
+        <div className="max-w-xl mx-auto text-center space-y-6">
+          <div className="text-2xl font-semibold tracking-tight text-foreground">
+            Build the System Before You Use It
+          </div>
+
+          <div className="text-sm text-muted-foreground leading-relaxed space-y-3">
+            <p>Most AI tools fail for predictable reasons:</p>
+
+            <div className="space-y-1 font-mono text-xs">
+              <div>• Hallucinations</div>
+              <div>• Context Drift</div>
+              <div>• Generic Answers</div>
+              <div>• AI Overreach</div>
+              <div>• Advice That Doesn't Match You</div>
+            </div>
+
+            <p>
+              GARVIS avoids those problems by anchoring to your Authority Knowledge Base (AKB).
+            </p>
+
+            <p>
+              We define your tone, deal breakers, strategic intent, and operating posture first —
+              so GARVIS aligns with how <span className="font-medium text-foreground">you</span> think.
+            </p>
+
+            <p className="font-medium text-foreground">
+              Doing this now gives you a three-lap head start in a four-lap race.
+            </p>
+
+            <p>
+              You don't have to complete everything today.
+              Lock each category when it feels right.
+              Control stays with you.
+            </p>
+          </div>
+        </div>
+
         {/* Card with input */}
         <div className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm p-6 shadow-lg shadow-black/20">
           <div className="flex items-end gap-2">
