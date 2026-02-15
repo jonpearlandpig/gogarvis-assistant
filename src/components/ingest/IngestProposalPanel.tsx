@@ -27,7 +27,7 @@ interface IngestProposalPanelProps {
   proposals: IngestProposal[];
   loading: boolean;
   classifyResult: any;
-  onApprove: (proposal: IngestProposal) => void;
+  onApprove: (proposal: IngestProposal) => Promise<void>;
   onDeny: (proposalId: string) => void;
   onReclassify: (overrideType: string) => void;
   onEdit: (proposalId: string, editedSummary: string, editedPayload: any) => Promise<void>;
@@ -284,7 +284,7 @@ export function IngestProposalPanel({
               proposal={p}
               checked={!!selected[p.id]}
               onCheckChange={(v) => setSelected((s) => ({ ...s, [p.id]: v }))}
-              onApprove={() => onApprove(p)}
+              onApprove={async () => { await onApprove(p); }}
               onDeny={() => onDeny(p.id)}
               onEdit={() => openEdit(p)}
               onApply={() => onApply(p.id)}
@@ -387,10 +387,10 @@ function ProposalCard({
   proposal: IngestProposal;
   checked: boolean;
   onCheckChange: (v: boolean) => void;
-  onApprove: () => void;
+  onApprove: () => Promise<void>;
   onDeny: () => void;
   onEdit: () => void;
-  onApply: () => void;
+  onApply: () => Promise<any>;
 }) {
   const isApplied = proposal.status === "applied";
   const isDenied = proposal.status === "denied";
@@ -473,27 +473,32 @@ function ProposalCard({
             Edit
           </button>
 
-          {proposal.status !== "approved" && proposal.status !== "edited" && (
+          {/* One-click Approve & Apply for non-draft proposals still in proposed state */}
+          {proposal.status === "proposed" && proposal.proposal_type !== "akb_draft" && (
+            <button
+              type="button"
+              onClick={async () => {
+                await onApprove();
+                await onApply();
+              }}
+              className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-foreground"
+            >
+              Approve & Apply
+            </button>
+          )}
+
+          {/* Standard Approve for akb_draft proposals still in proposed state */}
+          {proposal.status === "proposed" && proposal.proposal_type === "akb_draft" && (
             <button
               type="button"
               onClick={onApprove}
               className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-foreground"
-              disabled={isDenied}
             >
               Approve
             </button>
           )}
 
-          {proposal.status !== "denied" && (
-            <button
-              type="button"
-              onClick={onDeny}
-              className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-muted-foreground"
-            >
-              Deny
-            </button>
-          )}
-
+          {/* Apply button when already approved/edited */}
           {canApply && (
             <button
               type="button"
@@ -501,6 +506,16 @@ function ProposalCard({
               className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-foreground"
             >
               {isTemplate ? "Clone Template" : "Apply"}
+            </button>
+          )}
+
+          {!isDenied && (
+            <button
+              type="button"
+              onClick={onDeny}
+              className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-muted-foreground"
+            >
+              Deny
             </button>
           )}
         </div>
