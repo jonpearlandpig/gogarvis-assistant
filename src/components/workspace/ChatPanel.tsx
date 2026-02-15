@@ -43,6 +43,7 @@ interface Props {
   onStop: () => void;
   onCreateArtifact?: (content: string) => void;
   onUrlIngested?: (url?: string) => void;
+  onFilesIngested?: (uploadIds: string[]) => void;
   userId?: string;
   workspaceId?: string | null;
   onQuickStart?: (action: string) => void;
@@ -86,6 +87,7 @@ export function ChatPanel({
   onStop,
   onCreateArtifact,
   onUrlIngested,
+  onFilesIngested,
   userId,
   workspaceId,
   onQuickStart,
@@ -122,11 +124,17 @@ export function ChatPanel({
     if (!userId) return;
     const arr = Array.from(files);
     try {
+      const uploadIds: string[] = [];
       for (const f of arr) {
-        await uploadAKBFile({ userId, workspaceId: workspaceId || null, file: f });
+        const result = await uploadAKBFile({ userId, workspaceId: workspaceId || null, file: f });
+        if (result?.id) uploadIds.push(result.id);
       }
+      console.log("CHAT UPLOAD COMPLETE → uploadIds:", uploadIds);
       toast.success(`Uploaded ${arr.length} file(s)`);
       onUrlIngested?.();
+      if (uploadIds.length > 0) {
+        onFilesIngested?.(uploadIds);
+      }
     } catch (e: any) {
       toast.error(e?.message || "Upload failed");
     }

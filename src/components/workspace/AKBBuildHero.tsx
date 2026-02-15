@@ -14,7 +14,7 @@ interface AKBBuildHeroProps {
   onSend: (text: string) => void;
   userId?: string;
   workspaceId?: string | null;
-  onFilesUploaded?: () => void;
+  onFilesUploaded?: (uploadIds: string[]) => void;
   structureEntries?: StructureEntry[];
   onStartBuilding?: () => void;
 }
@@ -44,11 +44,14 @@ export function AKBBuildHero({
     if (!userId) return;
     const arr = Array.from(files);
     try {
+      const uploadIds: string[] = [];
       for (const f of arr) {
-        await uploadAKBFile({ userId, workspaceId: workspaceId || null, file: f });
+        const result = await uploadAKBFile({ userId, workspaceId: workspaceId || null, file: f });
+        if (result?.id) uploadIds.push(result.id);
       }
+      console.log("HERO UPLOAD COMPLETE → uploadIds:", uploadIds);
       toast.success(`Uploaded ${arr.length} file(s)`);
-      onFilesUploaded?.();
+      onFilesUploaded?.(uploadIds);
     } catch (e: any) {
       toast.error(e?.message || "Upload failed");
     }
