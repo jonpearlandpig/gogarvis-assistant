@@ -68,7 +68,10 @@ export function AKBBuilderPanel({
   };
 
   async function handleFiles(files: FileList | null) {
-    if (!files || !user?.id) return;
+    if (!files || !user?.id) {
+      console.warn("handleFiles blocked: no files or no user", { files: !!files, userId: user?.id });
+      return;
+    }
     const arr = Array.from(files);
     try {
       const uploadIds: string[] = [];
@@ -76,13 +79,25 @@ export function AKBBuilderPanel({
         const result = await uploadAKBFile({ userId: user.id, workspaceId, file: f });
         if (result?.id) uploadIds.push(result.id);
       }
+
+      console.log("UPLOAD COMPLETE → uploadIds:", uploadIds);
       toast.success(`Uploaded ${arr.length} file(s) to AKB Inbox`);
       await akb.refetch();
-      if (uploadIds.length > 0 && onFilesIngested) {
+
+      if (!uploadIds || uploadIds.length === 0) {
+        console.error("No uploadIds returned from upload");
+        toast.error("No uploadIds passed to ingest");
+        return;
+      }
+
+      if (onFilesIngested) {
+        console.log("Triggering onFilesIngested callback with", uploadIds.length, "ids");
         onFilesIngested(uploadIds);
+      } else {
+        console.warn("onFilesIngested callback not provided — ingest will NOT trigger");
       }
     } catch (e: any) {
-      console.error(e);
+      console.error("Upload failed:", e);
       toast.error(e?.message || "Upload failed");
     }
   }

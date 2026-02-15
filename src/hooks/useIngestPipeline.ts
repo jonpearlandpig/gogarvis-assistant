@@ -25,14 +25,27 @@ export function useIngestPipeline(userId: string | null, workspaceId: string | n
   const [classifyResult, setClassifyResult] = useState<any>(null);
 
   const startIngest = useCallback(async (sourceFileIds: string[]) => {
-    if (!userId || sourceFileIds.length === 0) return;
+    if (!userId) {
+      console.error("startIngest blocked: missing userId");
+      toast.error("Missing user — ingest blocked");
+      return;
+    }
+    if (!sourceFileIds || sourceFileIds.length === 0) {
+      console.error("startIngest blocked: no sourceFileIds");
+      toast.error("No files provided for ingest");
+      return;
+    }
+
+    console.log("Creating ingest run:", { userId, workspaceId, sourceFileIds });
     setLoading(true);
 
     try {
       const newRun = await createIngestRun({ userId, workspaceId, sourceFileIds });
+      console.log("INGEST RUN CREATED:", newRun.id);
       setRun(newRun);
 
       const result = await triggerClassification(newRun.id);
+      console.log("INGEST CLASSIFY RESULT:", result);
       setClassifyResult(result);
 
       if (result.status === "needs_classification") {
