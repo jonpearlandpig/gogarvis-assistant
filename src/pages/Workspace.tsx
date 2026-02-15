@@ -74,7 +74,6 @@ const Workspace = () => {
    const [showIngestPanel, setShowIngestPanel] = useState(false);
    const [showNextSteps, setShowNextSteps] = useState(false);
    const [nextStepsSource, setNextStepsSource] = useState<string | null>(null);
-   const ingest = useIngestPipeline(user?.id || null, null);
 
   // AKB soft-lock state
   const [akbMode, setAKBMode] = useState<"locked" | "foundation" | "full">("locked");
@@ -91,6 +90,9 @@ const Workspace = () => {
   const scopedAKB = useScopedAKB(user?.id || null);
   const activeProject = scopedAKB.projects.find((p) => p.id === scopedAKB.activeProjectId) || null;
   const scopeMode: "home" | "project" = scopedAKB.activeProjectId ? "project" : "home";
+
+  // Ingest pipeline (after scopedAKB so workspaceId is available)
+  const ingest = useIngestPipeline(user?.id || null, scopedAKB.activeProjectId ?? null);
 
   const currentScope: ScopeContract = useMemo(() => ({
     mode: scopeMode,
