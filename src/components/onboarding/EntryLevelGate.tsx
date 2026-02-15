@@ -1,4 +1,5 @@
 import garvisLogo from "@/assets/garvis_logo_white.png";
+import GarvisEntryGate from "./GarvisEntryGate";
 
 type Props = {
   open: boolean;
@@ -21,32 +22,11 @@ export function EntryLevelGate({ open, onChoose }: Props) {
           Lift the learner. Launch the leader.
         </div>
 
-        {/* Entry Options */}
-        <div className="space-y-4 pt-4">
-          <button
-            onClick={() => onChoose("getting_started")}
-            className="w-full text-left rounded-xl border border-border p-6 hover:bg-muted/40 transition-colors"
-          >
-            <div className="text-lg font-semibold text-foreground">
-              Getting started
-            </div>
-            <div className="text-sm text-muted-foreground mt-1">
-              Guided foundation build. One step at a time.
-            </div>
-          </button>
-
-          <button
-            onClick={() => onChoose("already_building")}
-            className="w-full text-left rounded-xl border border-border p-6 hover:bg-muted/40 transition-colors"
-          >
-            <div className="text-lg font-semibold text-foreground">
-              Already building
-            </div>
-            <div className="text-sm text-muted-foreground mt-1">
-              Bulk upload docs + add websites. GARVIS drafts your AKB for approval.
-            </div>
-          </button>
-        </div>
+        {/* Two-Door Entry */}
+        <GarvisEntryGate
+          onTry={() => onChoose("getting_started")}
+          onBuild={() => onChoose("already_building")}
+        />
       </div>
     </div>
   );
