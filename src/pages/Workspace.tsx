@@ -799,52 +799,9 @@ const Workspace = () => {
             </div>
           )}
 
-          {/* Desktop-only inline AKB Builder */}
-          {builderOnly && showAKBBuilder && (
-            <div className="hidden md:block">
-              <div className="flex items-center justify-between mb-2 px-3 pt-3">
-                <span className="text-xs font-mono text-foreground">AKB Builder</span>
-                <button
-                  onClick={() => setShowAKBBuilder(false)}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border hover:bg-muted/40"
-                >
-                  ✕ Close
-                </button>
-              </div>
-              <AKBBuilderPanel
-                workspaceId={null}
-                initialStep={akbBuilderStep}
-                onFilesIngested={handleFilesIngested}
-              />
-            </div>
-          )}
+          {/* AKB Builder rendered as full-screen overlay at root level */}
 
-          {/* Desktop-only inline Ingest Panel */}
-          {showIngestPanel && (
-            <div className="hidden md:block">
-              {ingest.run ? (
-                <IngestProposalPanel
-                  run={ingest.run}
-                  entities={ingest.entities}
-                  proposals={ingest.proposals}
-                  loading={ingest.loading}
-                  classifyResult={ingest.classifyResult}
-                  onApprove={(p) => ingest.approveProposal(p)}
-                  onDeny={(id) => ingest.denyProposal(id)}
-                  onReclassify={(type) => ingest.reclassify(type)}
-                  onEdit={(id, summary, payload) => ingest.editProposal(id, summary, payload)}
-                  onBatchApprove={(ids) => ingest.batchApprove(ids)}
-                  onBatchDeny={(ids) => ingest.batchDeny(ids)}
-                  onApply={(id) => ingest.applyOne(id)}
-                  onClose={() => { setShowIngestPanel(false); ingest.reset(); }}
-                />
-              ) : (
-                <div className="p-4 text-sm text-muted-foreground animate-pulse">
-                  Classifying & extracting…
-                </div>
-              )}
-            </div>
-          )}
+          {/* Ingest Panel rendered as full-screen overlay at root level */}
 
           {/* 80% Graduation Overlay */}
           <FoundationUnlockOverlay
@@ -916,7 +873,7 @@ const Workspace = () => {
 
       {/* ── Mobile-only full-screen overlays (rendered at root level to escape stacking contexts) ── */}
       {showIngestPanel && (
-        <div className="fixed inset-0 z-[9999] flex flex-col bg-background md:hidden">
+        <div className="fixed inset-0 z-[9999] flex flex-col bg-background">
           <div className="flex items-center justify-between p-3 border-b border-border">
             <span className="text-xs font-medium text-foreground">What I Found</span>
             <button
@@ -958,7 +915,7 @@ const Workspace = () => {
       )}
 
       {builderOnly && showAKBBuilder && (
-        <div className="fixed inset-0 z-[9998] flex flex-col bg-background md:hidden">
+        <div className="fixed inset-0 z-[9998] flex flex-col bg-background">
           <div className="flex items-center justify-between p-3 border-b border-border">
             <span className="text-xs font-mono text-foreground">AKB Builder</span>
             <button
