@@ -52,6 +52,36 @@ export function useIngestPipeline(userId: string | null, workspaceId: string | n
       toast.success(
         `Found ${ents.length} entities, ${props.length} proposals`
       );
+
+      // AUTO-APPLY: apply all AKB draft proposals immediately (no user clicks)
+      try {
+        const akbDraftIds = (props || [])
+          .filter((p: IngestProposal) => p.proposal_type === "akb_draft" && p.status === "proposed")
+          .map((p: IngestProposal) => p.id);
+
+        if (akbDraftIds.length > 0) {
+          // Mark approved in one shot
+          await batchSetProposalStatus({
+            ingestId: newRun.id,
+            ids: akbDraftIds,
+            status: "approved",
+          });
+
+          // Apply each via RPC (writes to akb_drafts)
+          for (const id of akbDraftIds) {
+            await applyProposal(id);
+          }
+
+          // Refresh proposals state to show applied
+          const refreshed = await fetchIngestProposals(newRun.id);
+          setProposals(refreshed);
+
+          toast.success(`Auto-filed ${akbDraftIds.length} AKB draft(s)`);
+        }
+      } catch (e: any) {
+        // Non-fatal: keep proposals UI available for manual apply
+        toast.error(e?.message || "Auto-apply failed (manual apply still available)");
+      }
     } catch (err: any) {
       toast.error(err?.message || "Ingest failed");
       if (run) setRun({ ...run, status: "failed" });
