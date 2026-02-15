@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 import { uploadAKBFile } from "@/lib/akbUpload";
 import { DomainCoverageChecklist } from "@/components/akb/DomainCoverageChecklist";
+import { IdentityTapLock } from "@/components/akb/IdentityTapLock";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -140,6 +141,16 @@ export function AKBBuilderPanel({
 
       {tab === "inbox" && (
         <div className="space-y-2">
+          {/* Identity tap-lock (replaces text-first flow) */}
+          {noteDomain === "identity" && (
+            <IdentityTapLock
+              sourceLabel="akb_builder"
+              onComplete={async () => {
+                await akb.refetch();
+                setTab("drafts");
+              }}
+            />
+          )}
           <div
             className="border border-dashed border-border rounded p-3 text-xs text-muted-foreground"
             onDragOver={(e) => e.preventDefault()}
