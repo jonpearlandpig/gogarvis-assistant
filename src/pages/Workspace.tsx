@@ -12,6 +12,8 @@ import {
   OperatorModeBanner,
   SovereignRenameModal,
 } from "@/components/workspace/ProgressionModals";
+import { SafeNextStep } from "@/components/system/SafeNextStep";
+import { FoundationUnlockOverlay } from "@/components/system/FoundationUnlockOverlay";
 import { ModuleNudge } from "@/components/modules/ModuleNudge";
 
 import { EntryLevelGate } from "@/components/onboarding/EntryLevelGate";
@@ -542,28 +544,15 @@ const Workspace = () => {
             </div>
           )}
 
-          {/* 80% Milestone Overlay */}
-          {celebrated80 && (
-            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
-              <div className="rounded-2xl border border-border bg-background shadow-xl p-8 text-center max-w-md space-y-4 animate-in fade-in zoom-in-95 duration-300">
-                <div className="text-sm font-mono uppercase tracking-wide text-muted-foreground">
-                  AKB Foundation Complete
-                </div>
-                <div className="text-lg font-semibold text-foreground">
-                  Your Workspace is Now Fully Unlocked
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  You built the system. Now build with it.
-                </div>
-                <button
-                  onClick={() => setCelebrated80(false)}
-                  className="mt-4 rounded-full border border-border px-4 py-2 text-sm hover:bg-muted/40 transition-colors"
-                >
-                  Continue
-                </button>
-              </div>
-            </div>
-          )}
+          {/* 80% Graduation Overlay */}
+          <FoundationUnlockOverlay
+            open={celebrated80}
+            onEnter={() => setCelebrated80(false)}
+            onStartProject={() => {
+              scopedAKB.scaffoldOnUnlock();
+              setCelebrated80(false);
+            }}
+          />
 
           {workspaceUnlocked && (
             <>
@@ -622,6 +611,51 @@ const Workspace = () => {
           toast.success(`Name updated: ${n}`);
         }}
       />
+
+      {/* ── Safe Next Step ── */}
+      {gate.hasFirstDataset && (
+        <SafeNextStep
+          state={
+            akbCoverage >= 80
+              ? "workspace"
+              : akbCoverage < 20
+              ? "akb_identity"
+              : akbCoverage < 40
+              ? "akb_goals"
+              : "akb_offer"
+          }
+          onAction={(action) => {
+            switch (action) {
+              case "save_identity":
+              case "save_goals":
+              case "save_offer":
+                setShowAKBBuilder(true);
+                break;
+              case "skip_identity":
+              case "next_offer":
+              case "continue_building":
+                setShowAKBGuide(true);
+                break;
+              case "enter_workspace":
+                setCelebrated80(false);
+                break;
+              case "start_project":
+                scopedAKB.scaffoldOnUnlock();
+                setCelebrated80(false);
+                break;
+              case "create_artifact":
+                handleSend("Create my first artifact.");
+                break;
+              case "new_project":
+                scopedAKB.addProject("New Project");
+                break;
+              case "suggest":
+                handleSend("What should I do next?");
+                break;
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
