@@ -545,6 +545,7 @@ const Workspace = () => {
                   <AKBProgressTLDR
                     progress={akbProgress.data}
                     workspaceUnlocked={workspaceUnlocked}
+                    hasFirstDataset={gate.hasFirstDataset}
                     onOpenBuilder={(step) => {
                       setAKBBuilderStep(step);
                       setShowAKBBuilder(true);
@@ -558,6 +559,7 @@ const Workspace = () => {
                     onCreateArtifact={() =>
                       handleSend("goGarvis: Welcome to Artifacts. Turn this into a real file.")
                     }
+                    onSendChat={(msg) => handleSend(msg)}
                   />
                 </div>
               )}
