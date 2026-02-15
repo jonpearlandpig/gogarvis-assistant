@@ -42,7 +42,7 @@ interface Props {
   onSend: (text: string) => void;
   onStop: () => void;
   onCreateArtifact?: (content: string) => void;
-  onUrlIngested?: () => void;
+  onUrlIngested?: (url?: string) => void;
   userId?: string;
   workspaceId?: string | null;
   onQuickStart?: (action: string) => void;
@@ -96,7 +96,7 @@ export function ChatPanel({
   const [menuOpen, setMenuOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const urlIntake = useChatUrlIntake(onUrlIngested);
+  const urlIntake = useChatUrlIntake((url) => onUrlIngested?.(url));
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });

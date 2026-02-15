@@ -32,6 +32,7 @@ import { useOnboardingGate } from "@/hooks/useOnboardingGate";
 import { streamChat, type AKBMeta, type ScopeContract, type StreamResult } from "@/lib/stream-chat";
 import { NotHereCard } from "@/components/scope/NotHereCard";
 import { ScopeResolverCard } from "@/components/scope/ScopeResolverCard";
+import { AKBNextStepsCard } from "@/components/chat/AKBNextStepsCard";
 import { toast } from "sonner";
 import { Hammer } from "lucide-react";
 import { buildReceiptReportArtifactSeed } from "@/lib/receiptsToArtifact";
@@ -69,8 +70,10 @@ const Workspace = () => {
   const [akbBuilderStep, setAKBBuilderStep] = useState<"identity"|"goals"|"offer"|"audience"|"assets"|"financial_model">("identity");
   const abortRef = useRef<AbortController | null>(null);
   const [uiAction, setUiAction] = useState<null | { type: string; payload?: any }>(null);
-  const [showIngestPanel, setShowIngestPanel] = useState(false);
-  const ingest = useIngestPipeline(user?.id || null, null);
+   const [showIngestPanel, setShowIngestPanel] = useState(false);
+   const [showNextSteps, setShowNextSteps] = useState(false);
+   const [nextStepsSource, setNextStepsSource] = useState<string | null>(null);
+   const ingest = useIngestPipeline(user?.id || null, null);
 
   // AKB soft-lock state
   const [akbMode, setAKBMode] = useState<"locked" | "foundation" | "full">("locked");
@@ -586,12 +589,37 @@ const Workspace = () => {
                   />
                 </div>
               )}
+
+              {(showNextSteps || uiAction?.type === "akb_next_steps") && (
+                <div className="px-3 pb-2">
+                  <AKBNextStepsCard
+                    detectedDomain={uiAction?.payload?.payload?.detected?.domain || "offer"}
+                    detectedSource={nextStepsSource || uiAction?.payload?.payload?.detected?.source || "your upload"}
+                    onDismiss={() => {
+                      setShowNextSteps(false);
+                      if (uiAction?.type === "akb_next_steps") setUiAction(null);
+                    }}
+                    onDraftsCreated={() => {
+                      akbDomains.refetch();
+                      akbProgress.refetch();
+                      gate.refetch();
+                    }}
+                  />
+                </div>
+              )}
+
               <ChatPanel
                 messages={messages}
                 isStreaming={isStreaming}
                 onSend={handleSend}
                 onStop={handleStop}
-                onUrlIngested={() => gate.refetch()}
+                onUrlIngested={(url?: string) => {
+                  gate.refetch();
+                  if (url) {
+                    setNextStepsSource(url);
+                    setShowNextSteps(true);
+                  }
+                }}
                 userId={user?.id}
                 workspaceId={null}
                 onQuickStart={handleSafeNextStep}
