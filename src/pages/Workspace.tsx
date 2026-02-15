@@ -91,6 +91,14 @@ const Workspace = () => {
   useEffect(() => {
     setUiAction(null);
   }, [scopedAKB.activeProjectId]);
+
+  // Safety: select first project after scaffold refresh lands
+  useEffect(() => {
+    if (!celebrated80) return;
+    if (scopedAKB.activeProjectId) return;
+    const firstId = scopedAKB.projects?.[0]?.id;
+    if (firstId) scopedAKB.setActiveProjectId(firstId);
+  }, [celebrated80, scopedAKB.projects, scopedAKB.activeProjectId]);
   // ─── Gates ──────────────────────────────────────────────
   const gate = useAKBIntakeGate(user?.id || null, null);
   const onboarding = useOnboardingGate(user?.id || null);
@@ -266,12 +274,16 @@ const Workspace = () => {
                 setCelebrated80(true);
                 setShowAKBGuide(false);
 
-                await scopedAKB.scaffoldOnUnlock();
+                const { createdProjectId } = await scopedAKB.scaffoldOnUnlock();
                 await scopedAKB.refresh();
 
-                const first = scopedAKB.projects?.[0];
-                if (!scopedAKB.activeProjectId && first?.id) {
-                  scopedAKB.setActiveProjectId(first.id);
+                if (!scopedAKB.activeProjectId) {
+                  if (createdProjectId) {
+                    scopedAKB.setActiveProjectId(createdProjectId);
+                  } else {
+                    const firstId = scopedAKB.projects?.[0]?.id;
+                    if (firstId) scopedAKB.setActiveProjectId(firstId);
+                  }
                 }
 
                 toast.success("AKB Foundation Achieved — Workspace Unlocked", { duration: 5000 });

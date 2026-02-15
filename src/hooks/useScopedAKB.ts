@@ -80,14 +80,14 @@ export function useScopedAKB(userId: string | null) {
 
   const hasScaffoldedRef = useRef(false);
 
-  const scaffoldOnUnlock = useCallback(async () => {
-    if (!userId) return;
-    if (hasScaffoldedRef.current) return;
+  const scaffoldOnUnlock = useCallback(async (): Promise<{ createdProjectId: string | null }> => {
+    if (!userId) return { createdProjectId: null };
+    if (hasScaffoldedRef.current) return { createdProjectId: null };
 
     const existing = await fetchProjects(userId);
     if (existing.length > 0) {
       hasScaffoldedRef.current = true;
-      return;
+      return { createdProjectId: null };
     }
 
     const p = await createProject(userId, "Project 01");
@@ -98,6 +98,7 @@ export function useScopedAKB(userId: string | null) {
     ]);
 
     hasScaffoldedRef.current = true;
+    return { createdProjectId: p.id };
   }, [userId]);
 
   return {
