@@ -619,7 +619,26 @@ const Workspace = () => {
           />
         )}
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden flex-col">
+          {/* Recent Uploads action queue — always visible when user has data */}
+          {gate.hasFirstDataset && (
+            <div className="px-3 py-2 shrink-0">
+              <RecentUploadsPanel
+                userId={user?.id || null}
+                workspaceId={scopedAKB.activeProjectId ?? null}
+                onOpenRun={(id) => {
+                  ingest.openRun(id);
+                  openPanel("ingest");
+                }}
+                onChanged={() => {
+                  akbDomains.refetch();
+                  akbProgress.refetch();
+                  gate.refetch();
+                }}
+              />
+            </div>
+          )}
+
           {/* Builder-only hero view: centered logo + input when no conversation yet */}
           {builderOnly && messages.length === 0 && !showAKBBuilder ? (
             <AKBBuildHero
@@ -679,24 +698,6 @@ const Workspace = () => {
                 </div>
               )}
 
-              {/* Recent Uploads action queue */}
-              {gate.hasFirstDataset && (
-                <div className="px-3 py-2">
-                  <RecentUploadsPanel
-                    userId={user?.id || null}
-                    workspaceId={scopedAKB.activeProjectId ?? null}
-                    onOpenRun={(id) => {
-                      ingest.openRun(id);
-                      openPanel("ingest");
-                    }}
-                    onChanged={() => {
-                      akbDomains.refetch();
-                      akbProgress.refetch();
-                      gate.refetch();
-                    }}
-                  />
-                </div>
-              )}
 
               {showAKBGuide && akbProgress.data && (
                 <div className="px-3 py-2">
