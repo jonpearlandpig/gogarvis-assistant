@@ -1249,6 +1249,11 @@ export type Database = {
     }
     Functions: {
       akb_lock_domain: { Args: { p_domain_key: string }; Returns: undefined }
+      akb_quickstart_offer: { Args: { p_source?: string }; Returns: Json }
+      akb_set_offer_choice: {
+        Args: { p_key: string; p_value: string }
+        Returns: Json
+      }
       gen_telauthorium_id: { Args: never; Returns: string }
       ingest_apply_proposal: { Args: { p_proposal_id: string }; Returns: Json }
       ingest_batch_set_status: {

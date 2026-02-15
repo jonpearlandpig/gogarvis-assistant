@@ -4,7 +4,7 @@ import { ingestUrlToAKB } from "@/lib/akb-url-ingest-client";
 
 const URL_RE = /(https:\/\/[^\s]+)/i;
 
-export function useChatUrlIntake(onIngested?: () => void) {
+export function useChatUrlIntake(onIngested?: (url: string) => void) {
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -22,8 +22,9 @@ export function useChatUrlIntake(onIngested?: () => void) {
     try {
       await ingestUrlToAKB({ url: pendingUrl, create_draft: true });
       toast.success("Ingested. Draft created for AKB Builder.");
+      const ingestedUrl = pendingUrl;
       clear();
-      onIngested?.();
+      onIngested?.(ingestedUrl);
     } catch (e: any) {
       toast.error(e?.message || "Failed to ingest URL");
     } finally {
