@@ -25,7 +25,6 @@ interface Props {
 type ComposerItem =
   | "Upload a doc (PDF/TXT/MD)"
   | "Add a website link"
-  | "Drop a receipt photo"
   | "Paste inventory / pricing"
   | "Paste a mission / offer";
 
@@ -33,18 +32,17 @@ function ExampleChips({ onPick }: { onPick: (text: ComposerItem) => void }) {
   const items: ComposerItem[] = [
     "Upload a doc (PDF/TXT/MD)",
     "Add a website link",
-    "Drop a receipt photo",
     "Paste inventory / pricing",
     "Paste a mission / offer",
   ];
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-1.5">
       {items.map((t) => (
         <button
           key={t}
           onClick={() => onPick(t)}
-          className="rounded-full border border-border bg-muted/40 px-3 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          className="rounded-full border border-border/60 px-2.5 py-0.5 text-[10px] text-muted-foreground/70 hover:text-muted-foreground hover:bg-muted/30 transition-colors"
         >
           {t}
         </button>
@@ -205,13 +203,13 @@ export function ChatPanel({
       <div className="border-t border-border p-4">
         <div className="mx-auto max-w-3xl space-y-3">
           {/* Example chips */}
-          <div className="flex items-start gap-2">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground mt-1 shrink-0">
-              Examples:
+          <div className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
+            <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60 shrink-0">
+              Try:
             </span>
             <ExampleChips
               onPick={(t) => {
-                if (t === "Upload a doc (PDF/TXT/MD)" || t === "Drop a receipt photo") {
+                if (t === "Upload a doc (PDF/TXT/MD)") {
                   fileRef.current?.click();
                 } else if (t === "Add a website link") {
                   setInput("https://");
