@@ -28,33 +28,49 @@ export function WhyAKBCollapsible({
         )}
       >
         <div className="rounded-xl border border-border bg-background/40 px-4 py-3 text-sm text-muted-foreground">
-          <div className="space-y-3">
+          <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
             <p>
               Most AI tools fail for predictable reasons: hallucinations, drift,
               generic answers, and overreach.
             </p>
+
             <p>
-              GARVIS prevents that by aligning to your Authority Knowledge Base
-              (AKB) first — your tone, deal breakers, strategic intent, and
-              operating posture.
+              GARVIS prevents that by aligning to your Authority Knowledge Base (AKB)
+              first — your tone, deal breakers, strategic intent, and operating posture.
             </p>
-            <p>It doesn't matter where you are on the AI spectrum.</p>
+
+            <p>
+              Wherever you are on the AI spectrum—
+            </p>
+
             <p>
               If you're early-stage with a handful of notes and rough ideas,
-              GARVIS multiplies clarity. If you bring a full executive brief,
-              financial model, GTM strategy, and years of operating history,
+              GARVIS multiplies clarity.
+            </p>
+
+            <p>
+              If you bring a full executive brief, financial model,
+              go-to-market strategy, and years of operating history,
               GARVIS compounds leverage.
             </p>
-            <p className="font-mono text-foreground/80">
+
+            <p className="font-medium text-foreground">
               Same system. Different lift.
             </p>
+
+            <div className="font-medium text-foreground">
+              <span className="block">
+                The bigger the WHAT (your AKB),
+              </span>
+              <span className="block">
+                the bigger the WOW (GARVIS outputs).
+              </span>
+            </div>
+
             <p>
-              The bigger the <span className="font-semibold text-foreground">WHAT</span> (your AKB),{" "}
-              the bigger the <span className="font-semibold text-foreground">WOW</span> (GARVIS outputs).
-            </p>
-            <p>
-              You don't have to complete everything today. Lock each category
-              when it feels right. Control stays with you.
+              You don't have to complete everything today.
+              Lock each category when it feels right.
+              Control stays with you.
             </p>
           </div>
 
