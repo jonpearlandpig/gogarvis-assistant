@@ -68,6 +68,7 @@ const Workspace = () => {
   // AKB soft-lock state
   const [akbMode, setAKBMode] = useState<"locked" | "foundation" | "full">("locked");
   const [akbCoverage, setAKBCoverage] = useState<number>(0);
+  const [celebrated80, setCelebrated80] = useState(false);
   const akbDomains = useAKBDomains(user?.id || null);
   const akbProgress = useAKBProgress(user?.id || null);
   const akbStructure = useAKBStructure(user?.id || null, null);
@@ -260,6 +261,12 @@ const Workspace = () => {
 
             if (typeof meta?.akbCoverage === "number" && !Number.isNaN(meta.akbCoverage)) {
               setAKBCoverage(meta.akbCoverage);
+
+              if (meta.akbCoverage >= 80 && !celebrated80) {
+                setCelebrated80(true);
+                setShowAKBGuide(false);
+                toast.success("AKB Foundation Achieved — Workspace Unlocked", { duration: 5000 });
+              }
             }
 
             if (Array.isArray(meta?.completedDomains)) {
@@ -510,6 +517,29 @@ const Workspace = () => {
           {builderOnly && showAKBBuilder && (
             <div className="absolute left-0 top-0 bottom-0 w-[420px] border-r border-border bg-background z-30 shadow-lg overflow-auto">
               <AKBBuilderPanel workspaceId={null} />
+            </div>
+          )}
+
+          {/* 80% Milestone Overlay */}
+          {celebrated80 && (
+            <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+              <div className="rounded-2xl border border-border bg-background shadow-xl p-8 text-center max-w-md space-y-4 animate-in fade-in zoom-in-95 duration-300">
+                <div className="text-sm font-mono uppercase tracking-wide text-muted-foreground">
+                  AKB Foundation Complete
+                </div>
+                <div className="text-lg font-semibold text-foreground">
+                  Your Workspace is Now Fully Unlocked
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  You built the system. Now build with it.
+                </div>
+                <button
+                  onClick={() => setCelebrated80(false)}
+                  className="mt-4 rounded-full border border-border px-4 py-2 text-sm hover:bg-muted/40 transition-colors"
+                >
+                  Continue
+                </button>
+              </div>
             </div>
           )}
 

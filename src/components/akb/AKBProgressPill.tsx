@@ -12,7 +12,8 @@ export function AKBProgressPill({ percent, label, onClick }: Props) {
       onClick={onClick}
       className={cn(
         "flex items-center gap-2 rounded-full border border-border bg-muted/30 px-3 py-1.5",
-        "hover:bg-muted/50 transition-colors"
+        "hover:bg-muted/50 transition-colors",
+        percent >= 80 && "animate-pulse"
       )}
       type="button"
     >
