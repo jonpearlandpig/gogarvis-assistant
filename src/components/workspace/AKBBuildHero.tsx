@@ -65,66 +65,18 @@ export function AKBBuildHero({
           />
         </div>
 
-        {/* Explainer */}
-        <div className="max-w-xl mx-auto text-center space-y-6">
-          <div className="text-2xl font-semibold tracking-tight text-foreground">
-            Build the System Before You Use It
+        {/* Why AKB — collapsible */}
+        <details className="max-w-xl mx-auto text-center group">
+          <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground font-mono transition-colors list-none flex items-center justify-center gap-1">
+            <span className="group-open:hidden">▸</span>
+            <span className="hidden group-open:inline">▾</span>
+            Why build your AKB first?
+          </summary>
+          <div className="mt-3 text-xs text-muted-foreground leading-relaxed space-y-2 text-left border border-border rounded-lg p-4 bg-card/60">
+            <p>Most AI tools hallucinate, drift, or give generic advice. GARVIS anchors to <span className="font-medium text-foreground">your</span> Authority Knowledge Base — your tone, deal breakers, strategic intent, and operating posture — so every answer aligns with how you think.</p>
+            <p className="text-foreground font-medium">Lock each category when it feels right. Control stays with you.</p>
           </div>
-
-          <div className="text-sm text-muted-foreground leading-relaxed space-y-3">
-            <p>Most AI tools fail for predictable reasons:</p>
-
-            <div className="space-y-1 font-mono text-xs">
-              <div>• Hallucinations</div>
-              <div>• Context Drift</div>
-              <div>• Generic Answers</div>
-              <div>• AI Overreach</div>
-              <div>• Advice That Doesn't Match You</div>
-            </div>
-
-            <p>
-              GARVIS avoids those problems by anchoring to your Authority Knowledge Base (AKB).
-            </p>
-
-            <p>
-              We define your tone, deal breakers, strategic intent, and operating posture first —
-              so GARVIS aligns with how <span className="font-medium text-foreground">you</span> think.
-            </p>
-
-            <p className="font-medium text-foreground">
-              Doing this now gives you a three-lap head start in a four-lap race.
-            </p>
-
-            <p>
-              You don't have to complete everything today.
-              Lock each category when it feels right.
-              Control stays with you.
-            </p>
-          </div>
-
-          {/* CTAs */}
-          <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={() => onStartBuilding?.()}
-              className="w-full sm:w-auto rounded-full border border-border px-5 py-2 text-sm hover:bg-muted/40 transition-colors"
-            >
-              Start Building My System
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                onSend(
-                  "Explore First (Foundation Mode): Give me a brief overview of what you can do right now, and what unlocks as my AKB coverage increases. Keep it concise."
-                )
-              }
-              className="w-full sm:w-auto rounded-full border border-border px-5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
-            >
-              Explore First (Limited Mode)
-            </button>
-          </div>
-        </div>
+        </details>
 
         {/* Card with input */}
         <div className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm p-6 shadow-lg shadow-black/20">
