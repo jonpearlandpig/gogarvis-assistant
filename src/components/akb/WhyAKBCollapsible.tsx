@@ -92,7 +92,7 @@ export function WhyAKBCollapsible({
               onClick={() => onStartBuilding?.()}
               className="w-full sm:w-auto rounded-full border border-border px-5 py-2 text-sm text-foreground hover:bg-muted/40 transition-colors"
             >
-              Start Building My System
+              Start Building My AKB
             </button>
 
             <button
