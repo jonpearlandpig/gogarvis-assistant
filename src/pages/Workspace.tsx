@@ -365,13 +365,34 @@ const Workspace = () => {
     }
   }, [user?.id, akbMode, akbCoverage, createArtifact]);
 
+  // ─── Panel mutual exclusivity ───────────────────────────
+  const openPanel = useCallback((panel: "ingest" | "builder") => {
+    if (panel === "ingest") {
+      setShowAKBBuilder(false);
+      setShowIngestPanel(true);
+    } else if (panel === "builder") {
+      setShowIngestPanel(false);
+      ingest.reset();
+      setShowAKBBuilder(true);
+    }
+  }, [ingest]);
+
   // ─── Safe Next Step helpers ─────────────────────────────
   const openBuilderStep = (
     step: "identity" | "goals" | "offer" | "audience" | "assets" | "financial_model"
   ) => {
     setAKBBuilderStep(step);
-    setShowAKBBuilder(true);
+    openPanel("builder");
   };
+
+  // ─── Lock body scroll when mobile overlay is open ──────
+  useEffect(() => {
+    const anyOverlayOpen = showIngestPanel || showAKBBuilder;
+    if (!anyOverlayOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [showIngestPanel, showAKBBuilder]);
 
   const safeStage:
     | "akb_identity"
@@ -443,7 +464,7 @@ const Workspace = () => {
     console.log("[INGEST] handleFilesIngested uploadIds:", uploadIds);
     if (!uploadIds || uploadIds.length === 0) return;
     ingest.startIngest(uploadIds);
-    setShowIngestPanel(true);
+    openPanel("ingest");
   }, [ingest]);
 
   // ─── Integrity Test ─────────────────────────────
@@ -490,7 +511,7 @@ const Workspace = () => {
           await onboarding.choose(level);
           if (level === "already_building") {
             toast.message("Bulk intake ready. Upload documents or add websites.");
-            setShowAKBBuilder(true);
+            openPanel("builder");
           } else {
             toast.message("Let's build your foundation.");
             setShowAKBBuilder(false);
@@ -647,7 +668,7 @@ const Workspace = () => {
                     workspaceUnlocked={workspaceUnlocked}
                     onOpenBuilder={(step) => {
                       setAKBBuilderStep(step);
-                      setShowAKBBuilder(true);
+                      openPanel("builder");
                     }}
                     onOpenGuide={() => setShowAKBGuide(true)}
                     onCreateArtifact={() =>
@@ -666,7 +687,7 @@ const Workspace = () => {
                     workspaceId={scopedAKB.activeProjectId ?? null}
                     onOpenRun={(id) => {
                       ingest.openRun(id);
-                      setShowIngestPanel(true);
+                      openPanel("ingest");
                     }}
                     onChanged={() => {
                       akbDomains.refetch();
@@ -694,7 +715,7 @@ const Workspace = () => {
                       if (choice) {
                         handleSend(`AKB: ${k}. Use selection: ${choice}. Generate a draft with 3 bullets + sources request.`);
                       } else {
-                        setShowAKBBuilder(true);
+                        openPanel("builder");
                       }
                     }}
                     onClose={() => setShowAKBGuide(false)}
@@ -779,45 +800,53 @@ const Workspace = () => {
           )}
 
           {builderOnly && showAKBBuilder && (
-            <div className="fixed inset-0 sm:absolute sm:inset-auto sm:left-0 sm:top-0 sm:bottom-0 sm:w-[420px] border-r border-border bg-background z-30 shadow-lg overflow-auto">
-              <div className="flex items-center justify-between px-3 pt-3">
-                <span className="text-xs font-mono text-foreground">AKB Builder</span>
-                <button
-                  onClick={() => setShowAKBBuilder(false)}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border hover:bg-muted/40"
-                >
-                  ✕ Close
-                </button>
+            <div className="fixed inset-0 z-[70] bg-background/80 backdrop-blur-sm md:static md:inset-auto md:z-auto md:bg-transparent md:backdrop-blur-0">
+              <div className="absolute inset-0 md:relative md:inset-auto overflow-hidden md:overflow-visible">
+                <div className="h-full w-full overflow-y-auto p-3 md:p-0">
+                  <div className="flex items-center justify-between mb-2 md:px-3 md:pt-3">
+                    <span className="text-xs font-mono text-foreground">AKB Builder</span>
+                    <button
+                      onClick={() => setShowAKBBuilder(false)}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border hover:bg-muted/40"
+                    >
+                      ✕ Close
+                    </button>
+                  </div>
+                  <AKBBuilderPanel
+                    workspaceId={null}
+                    initialStep={akbBuilderStep}
+                    onFilesIngested={handleFilesIngested}
+                  />
+                </div>
               </div>
-              <AKBBuilderPanel
-                workspaceId={null}
-                initialStep={akbBuilderStep}
-                onFilesIngested={handleFilesIngested}
-              />
             </div>
           )}
 
-          {/* Ingest Proposal Panel — full-screen on mobile */}
+          {/* Ingest Proposal Panel — overlay on mobile, inline on desktop */}
           {showIngestPanel && ingest.run && (
-            <div className="fixed inset-0 z-40 bg-background overflow-auto sm:relative sm:inset-auto sm:z-auto sm:bg-transparent">
-              <IngestProposalPanel
-                run={ingest.run}
-                entities={ingest.entities}
-                proposals={ingest.proposals}
-                loading={ingest.loading}
-                classifyResult={ingest.classifyResult}
-                onApprove={(p) => ingest.approveProposal(p)}
-                onDeny={(id) => ingest.denyProposal(id)}
-                onReclassify={(type) => ingest.reclassify(type)}
-                onEdit={(id, summary, payload) => ingest.editProposal(id, summary, payload)}
-                onBatchApprove={(ids) => ingest.batchApprove(ids)}
-                onBatchDeny={(ids) => ingest.batchDeny(ids)}
-                onApply={(id) => ingest.applyOne(id)}
-                onClose={() => {
-                  setShowIngestPanel(false);
-                  ingest.reset();
-                }}
-              />
+            <div className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm md:static md:inset-auto md:z-auto md:bg-transparent md:backdrop-blur-0">
+              <div className="absolute inset-0 md:relative md:inset-auto overflow-hidden md:overflow-visible">
+                <div className="h-full w-full overflow-y-auto p-3 md:p-0">
+                  <IngestProposalPanel
+                    run={ingest.run}
+                    entities={ingest.entities}
+                    proposals={ingest.proposals}
+                    loading={ingest.loading}
+                    classifyResult={ingest.classifyResult}
+                    onApprove={(p) => ingest.approveProposal(p)}
+                    onDeny={(id) => ingest.denyProposal(id)}
+                    onReclassify={(type) => ingest.reclassify(type)}
+                    onEdit={(id, summary, payload) => ingest.editProposal(id, summary, payload)}
+                    onBatchApprove={(ids) => ingest.batchApprove(ids)}
+                    onBatchDeny={(ids) => ingest.batchDeny(ids)}
+                    onApply={(id) => ingest.applyOne(id)}
+                    onClose={() => {
+                      setShowIngestPanel(false);
+                      ingest.reset();
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           )}
 
