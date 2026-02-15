@@ -779,7 +779,7 @@ const Workspace = () => {
           )}
 
           {builderOnly && showAKBBuilder && (
-            <div className="absolute left-0 top-0 bottom-0 w-[420px] border-r border-border bg-background z-30 shadow-lg overflow-auto">
+            <div className="fixed inset-0 sm:absolute sm:inset-auto sm:left-0 sm:top-0 sm:bottom-0 sm:w-[420px] border-r border-border bg-background z-30 shadow-lg overflow-auto">
               <div className="flex items-center justify-between px-3 pt-3">
                 <span className="text-xs font-mono text-foreground">AKB Builder</span>
                 <button
@@ -797,26 +797,28 @@ const Workspace = () => {
             </div>
           )}
 
-          {/* Ingest Proposal Panel */}
+          {/* Ingest Proposal Panel — full-screen on mobile */}
           {showIngestPanel && ingest.run && (
-            <IngestProposalPanel
-              run={ingest.run}
-              entities={ingest.entities}
-              proposals={ingest.proposals}
-              loading={ingest.loading}
-              classifyResult={ingest.classifyResult}
-              onApprove={(p) => ingest.approveProposal(p)}
-              onDeny={(id) => ingest.denyProposal(id)}
-              onReclassify={(type) => ingest.reclassify(type)}
-              onEdit={(id, summary, payload) => ingest.editProposal(id, summary, payload)}
-              onBatchApprove={(ids) => ingest.batchApprove(ids)}
-              onBatchDeny={(ids) => ingest.batchDeny(ids)}
-              onApply={(id) => ingest.applyOne(id)}
-              onClose={() => {
-                setShowIngestPanel(false);
-                ingest.reset();
-              }}
-            />
+            <div className="fixed inset-0 z-40 bg-background overflow-auto sm:relative sm:inset-auto sm:z-auto sm:bg-transparent">
+              <IngestProposalPanel
+                run={ingest.run}
+                entities={ingest.entities}
+                proposals={ingest.proposals}
+                loading={ingest.loading}
+                classifyResult={ingest.classifyResult}
+                onApprove={(p) => ingest.approveProposal(p)}
+                onDeny={(id) => ingest.denyProposal(id)}
+                onReclassify={(type) => ingest.reclassify(type)}
+                onEdit={(id, summary, payload) => ingest.editProposal(id, summary, payload)}
+                onBatchApprove={(ids) => ingest.batchApprove(ids)}
+                onBatchDeny={(ids) => ingest.batchDeny(ids)}
+                onApply={(id) => ingest.applyOne(id)}
+                onClose={() => {
+                  setShowIngestPanel(false);
+                  ingest.reset();
+                }}
+              />
+            </div>
           )}
 
           {/* 80% Graduation Overlay */}
