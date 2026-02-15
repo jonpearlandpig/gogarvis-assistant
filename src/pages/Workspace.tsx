@@ -603,7 +603,7 @@ const Workspace = () => {
 
           {builderOnly && showAKBBuilder && (
             <div className="absolute left-0 top-0 bottom-0 w-[420px] border-r border-border bg-background z-30 shadow-lg overflow-auto">
-              <AKBBuilderPanel workspaceId={null} />
+              <AKBBuilderPanel workspaceId={null} initialStep={akbBuilderStep} />
             </div>
           )}
 
