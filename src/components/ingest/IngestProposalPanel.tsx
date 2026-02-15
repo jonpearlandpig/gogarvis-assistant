@@ -126,12 +126,6 @@ export function IngestProposalPanel({
     (p) => p.proposal_type === "project_scaffold" || p.proposal_type === "template_clone"
   );
   const artifactProposals = proposals.filter((p) => p.proposal_type === "artifact_seed");
-  const industryTemplates = classifyResult?.industry_templates || [];
-
-  const entitySummary = entities.length > 0 ? `${entities.length} entities` : "No entities";
-  const projectCount = projectProposals.length;
-  const contactCount = entities.filter((e) => e.entity_type === "person_role").length;
-  const ipCount = entities.filter((e) => e.entity_type === "ip_title").length;
 
   const openEdit = (p: IngestProposal) => {
     setEditing(p);
@@ -152,15 +146,6 @@ export function IngestProposalPanel({
     setEditing(null);
     toast.success("Saved edits");
   };
-
-  const currentTabProposals =
-    tab === "drafts"
-      ? draftProposals
-      : tab === "projects"
-      ? projectProposals
-      : tab === "artifacts"
-      ? artifactProposals
-      : [];
 
 
 
@@ -186,30 +171,33 @@ export function IngestProposalPanel({
     }
   };
 
+  // Auto-select the first non-empty tab
+  const autoTab = draftProposals.length > 0 ? "drafts"
+    : projectProposals.length > 0 ? "projects"
+    : artifactProposals.length > 0 ? "artifacts"
+    : entities.length > 0 ? "entities"
+    : "drafts";
+  const activeTab = tab === "drafts" && draftProposals.length === 0 ? autoTab : tab;
+
+  // Only show tabs that have content
+  const visibleTabs = [
+    draftProposals.length > 0 && { key: "drafts" as const, label: `Drafts (${draftProposals.length})` },
+    projectProposals.length > 0 && { key: "projects" as const, label: `Projects (${projectProposals.length})` },
+    artifactProposals.length > 0 && { key: "artifacts" as const, label: `Artifacts (${artifactProposals.length})` },
+    entities.length > 0 && { key: "entities" as const, label: `Entities (${entities.length})` },
+  ].filter(Boolean) as { key: typeof tab; label: string }[];
+
   return (
     <div className="w-full rounded-2xl border border-border bg-background/40 p-4 shadow-sm">
-      {/* Header */}
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-medium text-foreground">What I Found</div>
-          <div className="text-xs text-muted-foreground">
-            {projectCount > 0 && `${projectCount} project${projectCount > 1 ? "s" : ""} • `}
-            {contactCount > 0 && `${contactCount} contact${contactCount > 1 ? "s" : ""} • `}
-            {ipCount > 0 && `${ipCount} IP item${ipCount > 1 ? "s" : ""} • `}
-            {entitySummary}
-          </div>
-          {run.detected_types?.length > 0 && (
-            <div className="mt-1 text-xs text-muted-foreground">
-              Detected: {run.detected_types.join(", ").replace(/_/g, " ")}
-            </div>
-          )}
-          {industryTemplates.length > 0 && (
-            <div className="mt-1 text-xs text-muted-foreground">
-              Closest templates: {industryTemplates.join(", ")}
-            </div>
-          )}
+      {/* Header — compact */}
+      <div className="mb-3 flex items-center justify-between">
+        <div className="text-sm font-medium text-foreground">
+          What I Found
+          <span className="ml-2 text-xs font-normal text-muted-foreground">
+            {proposals.length} proposal{proposals.length !== 1 ? "s" : ""}
+            {entities.length > 0 && ` · ${entities.length} entities`}
+          </span>
         </div>
-
         <button
           type="button"
           onClick={onClose}
@@ -219,66 +207,65 @@ export function IngestProposalPanel({
         </button>
       </div>
 
-      {/* Batch toolbar */}
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <div className="text-xs text-muted-foreground">
-          {selectedIds.length > 0 ? `${selectedIds.length} selected` : "Select items to batch"}
-        </div>
-
-        <button
-          type="button"
-          disabled={selectedIds.length === 0}
-          onClick={() => onBatchApprove(selectedIds).then(() => setSelected({}))}
-          className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-foreground disabled:opacity-40"
-        >
-          Approve Selected
-        </button>
-
-        <button
-          type="button"
-          disabled={selectedIds.length === 0}
-          onClick={() => onBatchDeny(selectedIds).then(() => setSelected({}))}
-          className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-muted-foreground disabled:opacity-40"
-        >
-          Deny Selected
-        </button>
-
-        <button
-          type="button"
-          disabled={canApplySelectedIds.length === 0 || bulkApplying}
-          onClick={bulkApply}
-          className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-foreground disabled:opacity-40"
-        >
-          {bulkApplying ? "Applying…" : `Apply Selected (${canApplySelectedIds.length})`}
-        </button>
-      </div>
-
-      {/* Tabs */}
-      <div className="mb-3 flex flex-wrap gap-2">
-        {([
-          { key: "drafts" as const, label: `AKB Drafts (${draftProposals.length})` },
-          { key: "projects" as const, label: `Projects (${projectProposals.length})` },
-          { key: "artifacts" as const, label: `Artifacts (${artifactProposals.length})` },
-          { key: "entities" as const, label: `Entities (${entities.length})` },
-        ]).map((t) => (
+      {/* Batch toolbar — only visible when items are checked */}
+      {selectedIds.length > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="text-xs text-muted-foreground">{selectedIds.length} selected</div>
           <button
-            key={t.key}
             type="button"
-            onClick={() => setTab(t.key)}
-            className={cn(
-              "text-xs px-2 py-1 rounded border border-border",
-              tab === t.key ? "bg-muted text-foreground" : "hover:bg-muted/40 text-muted-foreground"
-            )}
+            onClick={() => onBatchApprove(selectedIds).then(() => setSelected({}))}
+            className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-foreground"
           >
-            {t.label}
+            Approve
           </button>
-        ))}
-      </div>
+          <button
+            type="button"
+            onClick={() => onBatchDeny(selectedIds).then(() => setSelected({}))}
+            className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-muted-foreground"
+          >
+            Deny
+          </button>
+          {canApplySelectedIds.length > 0 && (
+            <button
+              type="button"
+              disabled={bulkApplying}
+              onClick={bulkApply}
+              className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-foreground disabled:opacity-40"
+            >
+              {bulkApplying ? "Applying…" : `Apply (${canApplySelectedIds.length})`}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Tabs — only show if more than one category has content */}
+      {visibleTabs.length > 1 && (
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {visibleTabs.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTab(t.key)}
+              className={cn(
+                "text-xs px-2.5 py-1 rounded-full transition-colors",
+                activeTab === t.key
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Content */}
       <div className="space-y-2">
-        {tab !== "entities" &&
-          currentTabProposals.map((p) => (
+        {activeTab !== "entities" &&
+          (activeTab === "drafts" ? draftProposals
+            : activeTab === "projects" ? projectProposals
+            : artifactProposals
+          ).map((p) => (
             <ProposalCard
               key={p.id}
               proposal={p}
@@ -291,28 +278,15 @@ export function IngestProposalPanel({
             />
           ))}
 
-        {tab === "entities" &&
+        {activeTab === "entities" &&
           entities.map((e) => (
             <div key={e.id} className="rounded-xl border border-border bg-background/30 p-3">
               <div className="text-sm font-medium text-foreground">{e.entity_name}</div>
               <div className="text-xs text-muted-foreground">
-                {e.entity_type} • {Math.round((e.confidence || 0) * 100)}%
+                {e.entity_type} · {Math.round((e.confidence || 0) * 100)}%
               </div>
-              {e.payload_json?.excerpt && (
-                <div className="mt-2 text-xs text-muted-foreground">"{e.payload_json.excerpt}"</div>
-              )}
             </div>
           ))}
-
-        {tab === "drafts" && draftProposals.length === 0 && (
-          <div className="text-sm text-muted-foreground">No AKB drafts proposed.</div>
-        )}
-        {tab === "projects" && projectProposals.length === 0 && (
-          <div className="text-sm text-muted-foreground">No projects detected.</div>
-        )}
-        {tab === "artifacts" && artifactProposals.length === 0 && (
-          <div className="text-sm text-muted-foreground">No artifacts suggested.</div>
-        )}
       </div>
 
       {/* Edit Modal */}
