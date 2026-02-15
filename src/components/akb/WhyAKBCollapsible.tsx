@@ -28,18 +28,33 @@ export function WhyAKBCollapsible({
         )}
       >
         <div className="rounded-xl border border-border bg-background/40 px-4 py-3 text-sm text-muted-foreground">
-          <div className="space-y-2">
+          <div className="space-y-3">
             <p>
-              Most AI tools fail for predictable reasons: hallucinations, context
-              drift, generic answers, and overreach.
+              Most AI tools fail for predictable reasons: hallucinations, drift,
+              generic answers, and overreach.
             </p>
             <p>
-              GARVIS avoids that by anchoring to your Authority Knowledge Base
-              (AKB): tone, deal breakers, strategic intent, and operating posture.
+              GARVIS prevents that by aligning to your Authority Knowledge Base
+              (AKB) first — your tone, deal breakers, strategic intent, and
+              operating posture.
+            </p>
+            <p>It doesn't matter where you are on the AI spectrum.</p>
+            <p>
+              If you're early-stage with a handful of notes and rough ideas,
+              GARVIS multiplies clarity. If you bring a full executive brief,
+              financial model, GTM strategy, and years of operating history,
+              GARVIS compounds leverage.
+            </p>
+            <p className="font-mono text-foreground/80">
+              Same system. Different lift.
             </p>
             <p>
-              Lock each category when it feels right. Control stays with you.
-              Doing this now gives you a three-lap head start in a four-lap race.
+              The bigger the <span className="font-semibold text-foreground">WHAT</span> (your AKB),{" "}
+              the bigger the <span className="font-semibold text-foreground">WOW</span> (GARVIS outputs).
+            </p>
+            <p>
+              You don't have to complete everything today. Lock each category
+              when it feels right. Control stays with you.
             </p>
           </div>
 
