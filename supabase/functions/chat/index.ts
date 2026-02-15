@@ -44,6 +44,64 @@ const TARGET_DOMAINS = [
   "brand", "financials", "assets_ip", "systems_templates",
 ] as const;
 
+const ORDERED_6 = ["identity", "goals", "offer", "audience", "assets", "financial_model"] as const;
+
+// --- AKB Progress (deterministic, no-rush) ---
+function evalMin(domain: string, counts: Record<string, number>): { min_met: boolean; progress: any } {
+  const have = counts[domain] || 0;
+  return { min_met: have >= 1, progress: { need: 1, have } };
+}
+
+async function computeAKBProgress(supabase: any, userId: string) {
+  const [domRes, draftRes, lawRes] = await Promise.all([
+    supabase.from("akb_domains").select("domain_key,status,locked,min_met,progress_json").eq("user_id", userId),
+    supabase.from("akb_drafts").select("domain,status").eq("user_id", userId).eq("status", "approved"),
+    supabase.from("akb_law").select("domain").eq("user_id", userId),
+  ]);
+
+  const domainMap = new Map(((domRes.data || []) as any[]).map((r: any) => [r.domain_key, r]));
+
+  const counts: Record<string, number> = {};
+  for (const r of ((draftRes.data || []) as any[])) {
+    if (r.domain) counts[r.domain] = (counts[r.domain] || 0) + 1;
+  }
+  const lawDomains = new Set(((lawRes.data || []) as any[]).map((r: any) => r.domain));
+  for (const d of lawDomains) counts[d] = (counts[d] || 0) + 1;
+
+  const merged = ORDERED_6.map((k) => {
+    const row = domainMap.get(k);
+    let status = "empty";
+    let locked = false;
+    if (row) {
+      status = row.status;
+      locked = row.locked ?? false;
+    } else if (lawDomains.has(k)) {
+      status = "complete";
+    } else if ((counts[k] || 0) > 0) {
+      status = "draft";
+    }
+    const { min_met, progress } = evalMin(k, counts);
+    return { domain_key: k, status, locked, min_met, progress_json: progress };
+  });
+
+  // Persist min_met/progress_json back to DB (upsert missing rows too)
+  for (const r of merged) {
+    const existing = domainMap.get(r.domain_key);
+    if (existing) {
+      await supabase.from("akb_domains").update({ min_met: r.min_met, progress_json: r.progress_json }).eq("user_id", userId).eq("domain_key", r.domain_key);
+    }
+    // Don't insert missing rows from edge function (RLS uses auth.uid(), service role not used here)
+  }
+
+  const completedCount = merged.filter((d: any) => d.status === "complete" || d.locked).length;
+  const total = merged.length;
+  const coveragePercent = Math.round((completedCount / total) * 100);
+  const lockable = merged.filter((d: any) => d.min_met && !d.locked).map((d: any) => d.domain_key);
+  const nextDomain = merged.find((d: any) => !d.locked && !d.min_met)?.domain_key || null;
+
+  return { domains: merged, lockable, nextDomain, coveragePercent, completedCount, total };
+}
+
 type AKBMode = "locked" | "foundation" | "full";
 type ScopeMode = "home" | "project";
 
@@ -464,8 +522,33 @@ Shape the response accordingly.
     // ===========================================
     // Build system messages
     // ===========================================
+    // Compute AKB progress (no-rush)
+    let akbProgress: any = null;
+    try {
+      akbProgress = await computeAKBProgress(supabase, user.id);
+    } catch (e) {
+      console.error("AKB progress computation failed:", e);
+    }
+
     const scopePrompt = buildScopePrompt(scope, canonical, projectOverlay, merged);
     const akbSoftMsg = buildAKBSoftModeSystemMessage(akb);
+
+    // No-rush progress prompt
+    const akbProgressPrompt = akbProgress ? `
+AKB PROGRESS RULES (NO RUSH)
+- Never pressure the user to fill AKB.
+- If a domain meets minimum requirements, offer two actions:
+  (A) "Lock this domain" (freezes it; moves user forward)
+  (B) "Add more" (suggest 3-7 selectable options; minimal typing)
+- If user is missing minimum requirements, offer 3-7 selectable options to complete it.
+- If user asks "am I ready?" answer with: current %, X/Y locked, next recommended, lockable list.
+- Keep guidance short and menu-like; prefer choices over questions.
+
+CURRENT AKB PROGRESS:
+- Coverage: ${akbProgress.coveragePercent}% (${akbProgress.completedCount}/${akbProgress.total})
+- Next domain: ${akbProgress.nextDomain || "none"}
+- Lockable domains: ${akbProgress.lockable.length > 0 ? akbProgress.lockable.join(", ") : "none"}
+`.trim() : "";
 
     // ===========================================
     // MODEL CALL
@@ -488,6 +571,9 @@ Shape the response accordingly.
               : []),
             ...(akbSoftMsg
               ? [{ role: "system", content: akbSoftMsg }]
+              : []),
+            ...(akbProgressPrompt
+              ? [{ role: "system", content: akbProgressPrompt }]
               : []),
             ...messages,
           ],
@@ -536,6 +622,7 @@ Shape the response accordingly.
       "X-AKB-Mode": akb.mode,
       "X-AKB-Coverage": String(akb.coveragePct),
       "X-AKB-Completed-Domains": JSON.stringify(completedDomains),
+      "X-AKB-Progress": JSON.stringify(akbProgress ? { lockable: akbProgress.lockable, nextDomain: akbProgress.nextDomain, coveragePercent: akbProgress.coveragePercent } : {}),
       "X-Scope-Mode": scope.mode,
       "X-Scope-Project-Id": scope.project_id || "",
     });

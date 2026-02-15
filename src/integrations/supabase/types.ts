@@ -92,6 +92,10 @@ export type Database = {
           created_at: string
           domain_key: string
           id: string
+          locked: boolean
+          locked_at: string | null
+          min_met: boolean
+          progress_json: Json
           status: string
           updated_at: string
           user_id: string
@@ -101,6 +105,10 @@ export type Database = {
           created_at?: string
           domain_key: string
           id?: string
+          locked?: boolean
+          locked_at?: string | null
+          min_met?: boolean
+          progress_json?: Json
           status?: string
           updated_at?: string
           user_id: string
@@ -110,6 +118,10 @@ export type Database = {
           created_at?: string
           domain_key?: string
           id?: string
+          locked?: boolean
+          locked_at?: string | null
+          min_met?: boolean
+          progress_json?: Json
           status?: string
           updated_at?: string
           user_id?: string
@@ -1070,6 +1082,7 @@ export type Database = {
       }
     }
     Functions: {
+      akb_lock_domain: { Args: { p_domain_key: string }; Returns: undefined }
       gen_telauthorium_id: { Args: never; Returns: string }
       is_conversation_owner: { Args: { conv_id: string }; Returns: boolean }
       sha256_hex: { Args: { t: string }; Returns: string }
