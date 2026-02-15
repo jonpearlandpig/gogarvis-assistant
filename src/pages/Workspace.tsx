@@ -35,7 +35,8 @@ import { NotHereCard } from "@/components/scope/NotHereCard";
 import { ScopeResolverCard } from "@/components/scope/ScopeResolverCard";
 import { AKBNextStepsCard } from "@/components/chat/AKBNextStepsCard";
 import { toast } from "sonner";
-import { Hammer, LogOut } from "lucide-react";
+import { Hammer, LogOut, ShieldCheck } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { buildReceiptReportArtifactSeed } from "@/lib/receiptsToArtifact";
 import { UOPBadge } from "@/components/profile/UOPBadge";
 import { AKBStatusBar } from "@/components/akb/AKBStatusBar";
@@ -425,6 +426,48 @@ const Workspace = () => {
     }
   };
 
+  // ─── Upload → Ingest: single source of truth ───
+  const handleFilesIngested = useCallback((uploadIds: string[]) => {
+    console.log("[INGEST] handleFilesIngested uploadIds:", uploadIds);
+    if (!uploadIds || uploadIds.length === 0) return;
+    ingest.startIngest(uploadIds);
+    setShowIngestPanel(true);
+  }, [ingest]);
+
+  // ─── Integrity Test ─────────────────────────────
+  const runIntegrityTest = useCallback(async () => {
+    try {
+      const userId = user?.id;
+      if (!userId) { toast.error("Not logged in"); return; }
+
+      const [uploads, runs, proposals, drafts, projects, artifacts_r] =
+        await Promise.all([
+          supabase.from("akb_uploads").select("id", { count: "exact", head: true }).eq("user_id", userId),
+          supabase.from("ingest_runs").select("id", { count: "exact", head: true }).eq("user_id", userId),
+          supabase.from("ingest_proposals").select("id", { count: "exact", head: true }).eq("user_id", userId),
+          supabase.from("akb_drafts").select("id", { count: "exact", head: true }).eq("user_id", userId),
+          supabase.from("akb_projects").select("id", { count: "exact", head: true }).eq("user_id", userId),
+          supabase.from("artifacts").select("id", { count: "exact", head: true }).eq("user_id", userId),
+        ]);
+
+      const result = {
+        uploads: uploads.count,
+        ingest_runs: runs.count,
+        ingest_proposals: proposals.count,
+        akb_drafts: drafts.count,
+        akb_projects: projects.count,
+        artifacts: artifacts_r.count,
+      };
+      console.log("[INTEGRITY]", result);
+      toast.success(
+        `uploads=${result.uploads} runs=${result.ingest_runs} proposals=${result.ingest_proposals} drafts=${result.akb_drafts} projects=${result.akb_projects}`
+      );
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Integrity test failed");
+    }
+  }, [user?.id]);
+
   // ─── Render ─────────────────────────────────────────────
   return (
     <div className="flex h-screen w-full flex-col bg-background">
@@ -500,6 +543,16 @@ const Workspace = () => {
             </div>
           )}
 
+          {/* Integrity Test */}
+          <button
+            onClick={runIntegrityTest}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            title="Integrity Test"
+          >
+            <ShieldCheck className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Integrity</span>
+          </button>
+
           {/* Sign Out — always visible */}
           <button
             onClick={async () => { await signOut(); window.location.href = "/auth"; }}
@@ -541,7 +594,10 @@ const Workspace = () => {
               onSend={handleSend}
               userId={user?.id}
               workspaceId={null}
-              onFilesUploaded={() => gate.refetch()}
+              onFilesUploaded={(uploadIds) => {
+                gate.refetch();
+                handleFilesIngested(uploadIds);
+              }}
               structureEntries={akbStructure.entries}
               onStartBuilding={() => {
                 setShowAKBGuide(true);
@@ -673,6 +729,7 @@ const Workspace = () => {
                     setShowNextSteps(true);
                   }
                 }}
+                onFilesIngested={handleFilesIngested}
                 userId={user?.id}
                 workspaceId={null}
                 onQuickStart={handleSafeNextStep}
@@ -705,10 +762,7 @@ const Workspace = () => {
               <AKBBuilderPanel
                 workspaceId={null}
                 initialStep={akbBuilderStep}
-                onFilesIngested={(uploadIds) => {
-                  ingest.startIngest(uploadIds);
-                  setShowIngestPanel(true);
-                }}
+                onFilesIngested={handleFilesIngested}
               />
             </div>
           )}
