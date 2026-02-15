@@ -843,6 +843,130 @@ export type Database = {
         }
         Relationships: []
       }
+      ingest_entities: {
+        Row: {
+          confidence: number
+          created_at: string
+          entity_name: string
+          entity_type: string
+          id: string
+          ingest_id: string
+          payload_json: Json
+          user_id: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          entity_name: string
+          entity_type: string
+          id?: string
+          ingest_id: string
+          payload_json?: Json
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          entity_name?: string
+          entity_type?: string
+          id?: string
+          ingest_id?: string
+          payload_json?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingest_entities_ingest_id_fkey"
+            columns: ["ingest_id"]
+            isOneToOne: false
+            referencedRelation: "ingest_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ingest_proposals: {
+        Row: {
+          created_at: string
+          id: string
+          ingest_id: string
+          payload_json: Json
+          proposal_type: string
+          source_excerpts: Json
+          status: string
+          summary: string
+          target: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingest_id: string
+          payload_json?: Json
+          proposal_type: string
+          source_excerpts?: Json
+          status?: string
+          summary: string
+          target: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingest_id?: string
+          payload_json?: Json
+          proposal_type?: string
+          source_excerpts?: Json
+          status?: string
+          summary?: string
+          target?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingest_proposals_ingest_id_fkey"
+            columns: ["ingest_id"]
+            isOneToOne: false
+            referencedRelation: "ingest_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ingest_runs: {
+        Row: {
+          created_at: string
+          detected_types: string[]
+          id: string
+          source_file_ids: Json
+          status: string
+          updated_at: string
+          user_id: string
+          workspace_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          detected_types?: string[]
+          id?: string
+          source_file_ids?: Json
+          status?: string
+          updated_at?: string
+          user_id: string
+          workspace_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          detected_types?: string[]
+          id?: string
+          source_file_ids?: Json
+          status?: string
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -874,6 +998,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      project_scaffold_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_name: string
+          id: string
+          industry_key: string
+          template_json: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          industry_key: string
+          template_json?: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          industry_key?: string
+          template_json?: Json
+        }
+        Relationships: []
       }
       receipts: {
         Row: {

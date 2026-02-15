@@ -6,6 +6,8 @@ import { AKBPanel } from "@/components/workspace/AKBPanel";
 import { ProfilePanel } from "@/components/workspace/ProfilePanel";
 import { AKBBuilderPanel } from "@/components/akb/AKBBuilderPanel";
 import { AKBBuildHero } from "@/components/workspace/AKBBuildHero";
+import { IngestProposalPanel } from "@/components/ingest/IngestProposalPanel";
+import { useIngestPipeline } from "@/hooks/useIngestPipeline";
 import {
   FoundationCompleteModal,
   WorkspaceRevealModal,
@@ -67,6 +69,8 @@ const Workspace = () => {
   const [akbBuilderStep, setAKBBuilderStep] = useState<"identity"|"goals"|"offer"|"audience"|"assets"|"financial_model">("identity");
   const abortRef = useRef<AbortController | null>(null);
   const [uiAction, setUiAction] = useState<null | { type: string; payload?: any }>(null);
+  const [showIngestPanel, setShowIngestPanel] = useState(false);
+  const ingest = useIngestPipeline(user?.id || null, null);
 
   // AKB soft-lock state
   const [akbMode, setAKBMode] = useState<"locked" | "foundation" | "full">("locked");
@@ -603,8 +607,33 @@ const Workspace = () => {
 
           {builderOnly && showAKBBuilder && (
             <div className="absolute left-0 top-0 bottom-0 w-[420px] border-r border-border bg-background z-30 shadow-lg overflow-auto">
-              <AKBBuilderPanel workspaceId={null} initialStep={akbBuilderStep} />
+              <AKBBuilderPanel
+                workspaceId={null}
+                initialStep={akbBuilderStep}
+                onFilesIngested={(uploadIds) => {
+                  ingest.startIngest(uploadIds);
+                  setShowIngestPanel(true);
+                }}
+              />
             </div>
+          )}
+
+          {/* Ingest Proposal Panel */}
+          {showIngestPanel && ingest.run && (
+            <IngestProposalPanel
+              run={ingest.run}
+              entities={ingest.entities}
+              proposals={ingest.proposals}
+              loading={ingest.loading}
+              classifyResult={ingest.classifyResult}
+              onApprove={(p) => ingest.approveProposal(p)}
+              onDeny={(id) => ingest.denyProposal(id)}
+              onReclassify={(type) => ingest.reclassify(type)}
+              onClose={() => {
+                setShowIngestPanel(false);
+                ingest.reset();
+              }}
+            />
           )}
 
           {/* 80% Graduation Overlay */}

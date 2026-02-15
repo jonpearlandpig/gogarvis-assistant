@@ -29,9 +29,11 @@ const DOMAIN_LABELS: Record<string, string> = {
 export function AKBBuilderPanel({
   workspaceId,
   initialStep,
+  onFilesIngested,
 }: {
   workspaceId: string | null;
   initialStep?: "identity" | "goals" | "offer" | "audience" | "assets" | "financial_model";
+  onFilesIngested?: (uploadIds: string[]) => void;
 }) {
   const { user } = useAuth();
   const akb = useAKBBuilder(user?.id || null, workspaceId);
@@ -68,11 +70,16 @@ export function AKBBuilderPanel({
     if (!files || !user?.id) return;
     const arr = Array.from(files);
     try {
+      const uploadIds: string[] = [];
       for (const f of arr) {
-        await uploadAKBFile({ userId: user.id, workspaceId, file: f });
+        const result = await uploadAKBFile({ userId: user.id, workspaceId, file: f });
+        if (result?.id) uploadIds.push(result.id);
       }
       toast.success(`Uploaded ${arr.length} file(s) to AKB Inbox`);
       await akb.refetch();
+      if (uploadIds.length > 0 && onFilesIngested) {
+        onFilesIngested(uploadIds);
+      }
     } catch (e: any) {
       console.error(e);
       toast.error(e?.message || "Upload failed");
