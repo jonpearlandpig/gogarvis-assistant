@@ -37,10 +37,11 @@ function ExampleChips({ onPick }: { onPick: (text: ComposerItem) => void }) {
   ];
 
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap gap-2">
       {items.map((t) => (
         <button
           key={t}
+          type="button"
           onClick={() => onPick(t)}
           className="rounded-full border border-border/60 px-2.5 py-0.5 text-[10px] text-muted-foreground/70 hover:text-muted-foreground hover:bg-muted/30 transition-colors"
         >
@@ -203,10 +204,8 @@ export function ChatPanel({
       <div className="border-t border-border p-4">
         <div className="mx-auto max-w-3xl space-y-3">
           {/* Example chips */}
-          <div className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
-            <span className="text-[9px] uppercase tracking-wider text-muted-foreground/60 shrink-0">
-              Try:
-            </span>
+          <div className="mt-2">
+            <div className="mb-1 text-[10px] text-muted-foreground/60">Try:</div>
             <ExampleChips
               onPick={(t) => {
                 if (t === "Upload a doc (PDF/TXT/MD)") {
