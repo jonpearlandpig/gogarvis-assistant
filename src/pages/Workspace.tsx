@@ -820,26 +820,29 @@ const Workspace = () => {
           )}
 
           {/* Desktop-only inline Ingest Panel */}
-          {showIngestPanel && ingest.run && (
+          {showIngestPanel && (
             <div className="hidden md:block">
-              <IngestProposalPanel
-                run={ingest.run}
-                entities={ingest.entities}
-                proposals={ingest.proposals}
-                loading={ingest.loading}
-                classifyResult={ingest.classifyResult}
-                onApprove={(p) => ingest.approveProposal(p)}
-                onDeny={(id) => ingest.denyProposal(id)}
-                onReclassify={(type) => ingest.reclassify(type)}
-                onEdit={(id, summary, payload) => ingest.editProposal(id, summary, payload)}
-                onBatchApprove={(ids) => ingest.batchApprove(ids)}
-                onBatchDeny={(ids) => ingest.batchDeny(ids)}
-                onApply={(id) => ingest.applyOne(id)}
-                onClose={() => {
-                  setShowIngestPanel(false);
-                  ingest.reset();
-                }}
-              />
+              {ingest.run ? (
+                <IngestProposalPanel
+                  run={ingest.run}
+                  entities={ingest.entities}
+                  proposals={ingest.proposals}
+                  loading={ingest.loading}
+                  classifyResult={ingest.classifyResult}
+                  onApprove={(p) => ingest.approveProposal(p)}
+                  onDeny={(id) => ingest.denyProposal(id)}
+                  onReclassify={(type) => ingest.reclassify(type)}
+                  onEdit={(id, summary, payload) => ingest.editProposal(id, summary, payload)}
+                  onBatchApprove={(ids) => ingest.batchApprove(ids)}
+                  onBatchDeny={(ids) => ingest.batchDeny(ids)}
+                  onApply={(id) => ingest.applyOne(id)}
+                  onClose={() => { setShowIngestPanel(false); ingest.reset(); }}
+                />
+              ) : (
+                <div className="p-4 text-sm text-muted-foreground animate-pulse">
+                  Classifying & extracting…
+                </div>
+              )}
             </div>
           )}
 
@@ -912,27 +915,44 @@ const Workspace = () => {
       />
 
       {/* ── Mobile-only full-screen overlays (rendered at root level to escape stacking contexts) ── */}
-      {showIngestPanel && ingest.run && (
+      {showIngestPanel && (
         <div className="fixed inset-0 z-[9999] flex flex-col bg-background md:hidden">
+          <div className="flex items-center justify-between p-3 border-b border-border">
+            <span className="text-xs font-medium text-foreground">What I Found</span>
+            <button
+              onClick={() => { setShowIngestPanel(false); ingest.reset(); }}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border hover:bg-muted/40"
+            >
+              ✕ Close
+            </button>
+          </div>
           <div className="flex-1 overflow-y-auto p-3">
-            <IngestProposalPanel
-              run={ingest.run}
-              entities={ingest.entities}
-              proposals={ingest.proposals}
-              loading={ingest.loading}
-              classifyResult={ingest.classifyResult}
-              onApprove={(p) => ingest.approveProposal(p)}
-              onDeny={(id) => ingest.denyProposal(id)}
-              onReclassify={(type) => ingest.reclassify(type)}
-              onEdit={(id, summary, payload) => ingest.editProposal(id, summary, payload)}
-              onBatchApprove={(ids) => ingest.batchApprove(ids)}
-              onBatchDeny={(ids) => ingest.batchDeny(ids)}
-              onApply={(id) => ingest.applyOne(id)}
-              onClose={() => {
-                setShowIngestPanel(false);
-                ingest.reset();
-              }}
-            />
+            {ingest.run ? (
+              <IngestProposalPanel
+                run={ingest.run}
+                entities={ingest.entities}
+                proposals={ingest.proposals}
+                loading={ingest.loading}
+                classifyResult={ingest.classifyResult}
+                onApprove={(p) => ingest.approveProposal(p)}
+                onDeny={(id) => ingest.denyProposal(id)}
+                onReclassify={(type) => ingest.reclassify(type)}
+                onEdit={(id, summary, payload) => ingest.editProposal(id, summary, payload)}
+                onBatchApprove={(ids) => ingest.batchApprove(ids)}
+                onBatchDeny={(ids) => ingest.batchDeny(ids)}
+                onApply={(id) => ingest.applyOne(id)}
+                onClose={() => { setShowIngestPanel(false); ingest.reset(); }}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="text-sm text-muted-foreground animate-pulse">
+                  Classifying & extracting…
+                </div>
+                <div className="mt-2 text-xs text-muted-foreground">
+                  This usually takes a few seconds.
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
