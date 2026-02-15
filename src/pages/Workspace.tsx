@@ -629,6 +629,10 @@ const Workspace = () => {
               onApprove={(p) => ingest.approveProposal(p)}
               onDeny={(id) => ingest.denyProposal(id)}
               onReclassify={(type) => ingest.reclassify(type)}
+              onEdit={(id, summary, payload) => ingest.editProposal(id, summary, payload)}
+              onBatchApprove={(ids) => ingest.batchApprove(ids)}
+              onBatchDeny={(ids) => ingest.batchDeny(ids)}
+              onApply={(id) => ingest.applyOne(id)}
               onClose={() => {
                 setShowIngestPanel(false);
                 ingest.reset();

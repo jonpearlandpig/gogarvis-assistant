@@ -22,12 +22,16 @@ export type IngestEntity = {
 export type IngestProposal = {
   id: string;
   ingest_id: string;
-  proposal_type: "akb_draft" | "project_scaffold" | "artifact_seed";
+  proposal_type: "akb_draft" | "project_scaffold" | "artifact_seed" | "template_clone";
   target: string;
   summary: string;
   payload_json: any;
   source_excerpts: any[];
-  status: "proposed" | "approved" | "denied" | "edited";
+  status: "proposed" | "approved" | "denied" | "edited" | "applied";
+  edited_summary?: string | null;
+  edited_payload_json?: any | null;
+  edited_at?: string | null;
+  applied_at?: string | null;
 };
 
 export async function createIngestRun(params: {
@@ -104,7 +108,7 @@ export async function updateProposalStatus(
 
 export async function applyApprovedProposal(proposal: IngestProposal, userId: string, workspaceId: string | null) {
   if (proposal.proposal_type === "akb_draft") {
-    const payload = proposal.payload_json;
+    const payload = proposal.edited_payload_json || proposal.payload_json;
     const { error } = await supabase.from("akb_drafts").insert({
       user_id: userId,
       workspace_id: workspaceId,
@@ -148,4 +152,40 @@ export async function reclassifyIngestRun(ingestRunId: string, overrideType: str
   } as any).eq("id", ingestRunId);
 
   return triggerClassification(ingestRunId);
+}
+
+// --- New: Edit, Batch, Apply via RPCs ---
+
+export async function updateProposalEdit(args: {
+  proposalId: string;
+  editedSummary: string;
+  editedPayload: any;
+}) {
+  const { error } = await supabase.rpc("ingest_update_proposal" as any, {
+    p_proposal_id: args.proposalId,
+    p_edited_summary: args.editedSummary,
+    p_edited_payload: args.editedPayload,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function batchSetProposalStatus(args: {
+  ingestId: string;
+  ids: string[];
+  status: "approved" | "denied";
+}) {
+  const { error } = await supabase.rpc("ingest_batch_set_status" as any, {
+    p_ingest_id: args.ingestId,
+    p_ids: args.ids,
+    p_status: args.status,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function applyProposal(proposalId: string) {
+  const { data, error } = await supabase.rpc("ingest_apply_proposal" as any, {
+    p_proposal_id: proposalId,
+  });
+  if (error) throw new Error(error.message);
+  return data;
 }
