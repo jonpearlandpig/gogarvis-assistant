@@ -607,6 +607,15 @@ const Workspace = () => {
 
           {builderOnly && showAKBBuilder && (
             <div className="absolute left-0 top-0 bottom-0 w-[420px] border-r border-border bg-background z-30 shadow-lg overflow-auto">
+              <div className="flex items-center justify-between px-3 pt-3">
+                <span className="text-xs font-mono text-foreground">AKB Builder</span>
+                <button
+                  onClick={() => setShowAKBBuilder(false)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border hover:bg-muted/40"
+                >
+                  ✕ Close
+                </button>
+              </div>
               <AKBBuilderPanel
                 workspaceId={null}
                 initialStep={akbBuilderStep}
