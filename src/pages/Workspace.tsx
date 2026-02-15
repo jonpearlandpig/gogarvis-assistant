@@ -22,6 +22,7 @@ import { useArtifacts } from "@/hooks/useArtifacts";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useAKBIntakeGate } from "@/hooks/useAKBIntakeGate";
 import { useAKBDomains } from "@/hooks/useAKBDomains";
+import { useAKBProgress } from "@/hooks/useAKBProgress";
 import { useAKBStructure } from "@/hooks/useAKBStructure";
 import { useOnboardingGate } from "@/hooks/useOnboardingGate";
 import { streamChat, type AKBMeta, type ScopeContract, type StreamResult } from "@/lib/stream-chat";
@@ -32,6 +33,8 @@ import { Hammer } from "lucide-react";
 import { buildReceiptReportArtifactSeed } from "@/lib/receiptsToArtifact";
 import { UOPBadge } from "@/components/profile/UOPBadge";
 import { AKBStatusBar } from "@/components/akb/AKBStatusBar";
+import { AKBProgressPill } from "@/components/akb/AKBProgressPill";
+import { AKBGuidancePanel } from "@/components/akb/AKBGuidancePanel";
 import { runModuleDetection } from "@/lib/module-detection-client";
 import { computeJournalScore } from "@/lib/journal-signal";
 import garvisLogo from "@/assets/garvis_logo_black.png";
@@ -66,9 +69,11 @@ const Workspace = () => {
   const [akbMode, setAKBMode] = useState<"locked" | "foundation" | "full">("locked");
   const [akbCoverage, setAKBCoverage] = useState<number>(0);
   const akbDomains = useAKBDomains(user?.id || null);
+  const akbProgress = useAKBProgress(user?.id || null);
   const akbStructure = useAKBStructure(user?.id || null, null);
   const prevCompletedCount = useRef(0);
   const foundationLock = akbMode !== "full";
+  const [showAKBGuide, setShowAKBGuide] = useState(false);
 
   // Scoped AKB (canonical + projects)
   const scopedAKB = useScopedAKB(user?.id || null);
@@ -251,7 +256,7 @@ const Workspace = () => {
 
             // Always refetch domain status so status bar stays in sync
             await akbDomains.refetch();
-            akbStructure.refetch();
+            await akbProgress.refetch();
 
             if (typeof meta?.akbCoverage === "number" && !Number.isNaN(meta.akbCoverage)) {
               setAKBCoverage(meta.akbCoverage);
@@ -351,14 +356,11 @@ const Workspace = () => {
 
         {/* Right: AKB status + controls */}
         <div className="flex items-center gap-3">
-          {gate.hasFirstDataset && (
-            <AKBStatusBar
-              domains={akbDomains.domains}
-              completedCount={akbDomains.completedCount}
-              total={akbDomains.total}
-              coveragePercent={akbDomains.coveragePercent}
-              nextDomain={akbDomains.nextDomain}
-              visible={true}
+          {gate.hasFirstDataset && akbProgress.data && (
+            <AKBProgressPill
+              percent={akbProgress.data.coveragePercent}
+              label={akbProgress.data.nextDomain ? `Next: ${akbProgress.data.nextDomain}` : "Complete"}
+              onClick={() => setShowAKBGuide((p) => !p)}
             />
           )}
 
@@ -431,6 +433,30 @@ const Workspace = () => {
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden">
               {user?.id && <ModuleNudge userId={user.id} />}
+
+              {showAKBGuide && akbProgress.data && (
+                <div className="px-3 py-2">
+                  <AKBGuidancePanel
+                    progress={akbProgress.data}
+                    onLock={async (k) => {
+                      try {
+                        await akbProgress.lockDomain(k);
+                        toast.success(`${k} locked`);
+                      } catch (err: any) {
+                        toast.error(err?.message || "Failed to lock domain");
+                      }
+                    }}
+                    onContinue={(k, choice) => {
+                      setShowAKBGuide(false);
+                      if (choice) {
+                        handleSend(`AKB: ${k}. Use selection: ${choice}. Generate a draft with 3 bullets + sources request.`);
+                      } else {
+                        setShowAKBBuilder(true);
+                      }
+                    }}
+                  />
+                </div>
+              )}
 
               {uiAction?.type === "not_here" && (
                 <div className="px-3 pb-2">
