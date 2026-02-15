@@ -7,6 +7,7 @@ import { ProfilePanel } from "@/components/workspace/ProfilePanel";
 import { AKBBuilderPanel } from "@/components/akb/AKBBuilderPanel";
 import { AKBBuildHero } from "@/components/workspace/AKBBuildHero";
 import { IngestProposalPanel } from "@/components/ingest/IngestProposalPanel";
+import { RecentUploadsPanel } from "@/components/ingest/RecentUploadsPanel";
 import { useIngestPipeline } from "@/hooks/useIngestPipeline";
 import {
   FoundationCompleteModal,
@@ -557,6 +558,20 @@ const Workspace = () => {
                       handleSend("goGarvis: Welcome to Artifacts. Turn this into a real file.")
                     }
                     onSendChat={(msg) => handleSend(msg)}
+                  />
+                </div>
+              )}
+
+              {/* Recent Uploads action queue */}
+              {gate.hasFirstDataset && (
+                <div className="px-3 py-2">
+                  <RecentUploadsPanel
+                    userId={user?.id || null}
+                    workspaceId={scopedAKB.activeProjectId ?? null}
+                    onOpenRun={(id) => {
+                      ingest.openRun(id);
+                      setShowIngestPanel(true);
+                    }}
                   />
                 </div>
               )}

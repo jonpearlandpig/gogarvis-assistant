@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import {
   createIngestRun,
   triggerClassification,
+  fetchIngestRun,
   fetchIngestEntities,
   fetchIngestProposals,
   updateProposalStatus,
@@ -198,6 +199,23 @@ export function useIngestPipeline(userId: string | null, workspaceId: string | n
     }
   }, [run]);
 
+  const openRun = useCallback(async (runId: string) => {
+    setLoading(true);
+    try {
+      const r = await fetchIngestRun(runId);
+      const [ents, props] = await Promise.all([
+        fetchIngestEntities(runId),
+        fetchIngestProposals(runId),
+      ]);
+      setRun(r);
+      setEntities(ents);
+      setProposals(props);
+      setClassifyResult(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const reset = useCallback(() => {
     setRun(null);
     setEntities([]);
@@ -220,6 +238,7 @@ export function useIngestPipeline(userId: string | null, workspaceId: string | n
     applyOne,
     reclassify,
     refetchProposals,
+    openRun,
     reset,
   };
 }
