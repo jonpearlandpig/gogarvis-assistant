@@ -23,7 +23,7 @@ export function WhyAKBCollapsible({
 
       <div
         className={cn(
-          "overflow-hidden transition-all",
+          "overflow-hidden transition-all duration-300",
           open ? "max-h-[720px] opacity-100 mt-2" : "max-h-0 opacity-0 mt-0"
         )}
       >
