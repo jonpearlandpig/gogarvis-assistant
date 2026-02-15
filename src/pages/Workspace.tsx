@@ -457,6 +457,7 @@ const Workspace = () => {
               workspaceId={null}
               onFilesUploaded={() => gate.refetch()}
               structureEntries={akbStructure.entries}
+              onStartBuilding={() => setShowAKBGuide(true)}
             />
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden">
