@@ -114,13 +114,13 @@ export function useIngestPipeline(userId: string | null, workspaceId: string | n
     if (!userId) return;
     try {
       await updateProposalStatus(proposal.id, "approved");
-      await applyApprovedProposal(proposal, userId, workspaceId);
       setProposals((prev) =>
-        prev.map((p) => p.id === proposal.id ? { ...p, status: "approved" } : p)
+        prev.map((p) => p.id === proposal.id ? { ...p, status: "approved" as const } : p)
       );
       toast.success(`Approved: ${proposal.summary}`);
     } catch (err: any) {
       toast.error(err?.message || "Failed to approve");
+      throw err;
     }
   }, [userId, workspaceId]);
 
