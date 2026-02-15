@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Plus, MessageSquare, Trash2, LogOut, Shield, Pencil } from "lucide-react";
+import { Plus, MessageSquare, Trash2, Shield, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
@@ -134,15 +134,6 @@ export function ConversationSidebar({ conversations, activeId, onSelect, onCreat
             </div>
           </div>
         </div>
-        <Button
-          onClick={signOut}
-          variant="ghost"
-          size="sm"
-          className="mt-2 w-full justify-start gap-2 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <LogOut className="h-3.5 w-3.5" />
-          Sign Out
-        </Button>
       </div>
     </div>
   );
