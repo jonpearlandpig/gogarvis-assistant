@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import type { IngestEntity, IngestProposal } from "@/lib/ingest-client";
+import type { IngestProposal, IngestEntity } from "@/lib/ingest-client";
 
 const TYPE_LABELS: Record<string, string> = {
   akb_draft: "AKB Draft",
@@ -58,30 +57,48 @@ export function IngestProposalPanel({
   const [editing, setEditing] = useState<IngestProposal | null>(null);
   const [editSummary, setEditSummary] = useState("");
   const [editPayload, setEditPayload] = useState("");
+  const [bulkApplying, setBulkApplying] = useState(false);
 
   const selectedIds = useMemo(
     () => Object.entries(selected).filter(([, v]) => v).map(([k]) => k),
     [selected]
   );
 
+  const canApplySelectedIds = useMemo(() => {
+    const map = new Map(proposals.map((p) => [p.id, p]));
+    return selectedIds
+      .map((id) => map.get(id))
+      .filter(Boolean)
+      .filter((p) => (p as IngestProposal).status === "approved" || (p as IngestProposal).status === "edited")
+      .map((p) => (p as IngestProposal).id);
+  }, [selectedIds, proposals]);
+
   if (!run) return null;
 
   // Confidence gating
   if (run.status === "needs_classification") {
     return (
-      <div className="w-[480px] border-l border-border bg-background p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="text-sm font-mono text-foreground">Low Confidence</div>
-          <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground">✕</button>
+      <div className="w-full rounded-2xl border border-border bg-background/40 p-4 shadow-sm">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="text-sm font-medium text-foreground">Low Confidence</div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded px-2 py-1 text-sm text-muted-foreground hover:text-foreground"
+          >
+            ×
+          </button>
         </div>
-        <p className="text-xs text-muted-foreground">
+
+        <div className="text-sm text-muted-foreground">
           GARVIS couldn't confidently classify this document. Please confirm:
-        </p>
-        <div className="text-xs font-mono text-foreground mb-2">Is this primarily:</div>
-        <div className="flex flex-wrap gap-2">
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
           {CLASSIFY_OPTIONS.map((opt) => (
             <button
               key={opt}
+              type="button"
               onClick={() => onReclassify(opt)}
               disabled={loading}
               className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-foreground disabled:opacity-40"
@@ -90,25 +107,24 @@ export function IngestProposalPanel({
             </button>
           ))}
         </div>
-        {loading && (
-          <div className="text-xs text-muted-foreground animate-pulse">Re-classifying…</div>
-        )}
+
+        {loading && <div className="mt-3 text-sm text-muted-foreground">Re-classifying…</div>}
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="w-[480px] border-l border-border bg-background p-4">
-        <div className="text-xs font-mono text-foreground animate-pulse">
-          Classifying & extracting…
-        </div>
+      <div className="w-full rounded-2xl border border-border bg-background/40 p-4 shadow-sm">
+        <div className="text-sm text-muted-foreground">Classifying & extracting…</div>
       </div>
     );
   }
 
   const draftProposals = proposals.filter((p) => p.proposal_type === "akb_draft");
-  const projectProposals = proposals.filter((p) => p.proposal_type === "project_scaffold" || p.proposal_type === "template_clone");
+  const projectProposals = proposals.filter(
+    (p) => p.proposal_type === "project_scaffold" || p.proposal_type === "template_clone"
+  );
   const artifactProposals = proposals.filter((p) => p.proposal_type === "artifact_seed");
   const industryTemplates = classifyResult?.industry_templates || [];
 
@@ -134,62 +150,111 @@ export function IngestProposalPanel({
     }
     await onEdit(editing.id, editSummary, parsed);
     setEditing(null);
+    toast.success("Saved edits");
   };
 
-  const currentTabProposals = tab === "drafts" ? draftProposals
-    : tab === "projects" ? projectProposals
-    : tab === "artifacts" ? artifactProposals
-    : [];
+  const currentTabProposals =
+    tab === "drafts"
+      ? draftProposals
+      : tab === "projects"
+      ? projectProposals
+      : tab === "artifacts"
+      ? artifactProposals
+      : [];
+
+
+
+
+  const bulkApply = async () => {
+    if (bulkApplying) return;
+    if (canApplySelectedIds.length === 0) {
+      toast.message("Nothing selected is ready to apply");
+      return;
+    }
+
+    setBulkApplying(true);
+    try {
+      for (const id of canApplySelectedIds) {
+        await onApply(id);
+      }
+      toast.success(`Applied ${canApplySelectedIds.length} item(s)`);
+      setSelected({});
+    } catch (e: any) {
+      toast.error(e?.message || "Bulk apply failed");
+    } finally {
+      setBulkApplying(false);
+    }
+  };
 
   return (
-    <div className="w-[480px] border-l border-border bg-background p-3 space-y-3">
+    <div className="w-full rounded-2xl border border-border bg-background/40 p-4 shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm font-mono text-foreground">What I Found</div>
-        <button onClick={onClose} className="text-xs text-muted-foreground hover:text-foreground">✕</button>
-      </div>
-
-      {/* Summary card */}
-      <div className="border border-border rounded p-3 space-y-1">
-        <div className="text-xs text-foreground">
-          {projectCount > 0 && <span>{projectCount} project{projectCount > 1 ? "s" : ""} • </span>}
-          {contactCount > 0 && <span>{contactCount} contact{contactCount > 1 ? "s" : ""} • </span>}
-          {ipCount > 0 && <span>{ipCount} IP item{ipCount > 1 ? "s" : ""} • </span>}
-          {entitySummary}
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-medium text-foreground">What I Found</div>
+          <div className="text-xs text-muted-foreground">
+            {projectCount > 0 && `${projectCount} project${projectCount > 1 ? "s" : ""} • `}
+            {contactCount > 0 && `${contactCount} contact${contactCount > 1 ? "s" : ""} • `}
+            {ipCount > 0 && `${ipCount} IP item${ipCount > 1 ? "s" : ""} • `}
+            {entitySummary}
+          </div>
+          {run.detected_types?.length > 0 && (
+            <div className="mt-1 text-xs text-muted-foreground">
+              Detected: {run.detected_types.join(", ").replace(/_/g, " ")}
+            </div>
+          )}
+          {industryTemplates.length > 0 && (
+            <div className="mt-1 text-xs text-muted-foreground">
+              Closest templates: {industryTemplates.join(", ")}
+            </div>
+          )}
         </div>
-        {run.detected_types.length > 0 && (
-          <div className="text-[10px] text-muted-foreground">
-            Detected: {run.detected_types.join(", ").replace(/_/g, " ")}
-          </div>
-        )}
-        {industryTemplates.length > 0 && (
-          <div className="text-[10px] text-muted-foreground">
-            Closest templates: {industryTemplates.join(", ")}
-          </div>
-        )}
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded px-2 py-1 text-sm text-muted-foreground hover:text-foreground"
+        >
+          ×
+        </button>
       </div>
 
       {/* Batch toolbar */}
-      {selectedIds.length > 0 && (
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">{selectedIds.length} selected</span>
-          <button
-            onClick={() => onBatchApprove(selectedIds).then(() => setSelected({}))}
-            className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-foreground"
-          >
-            Approve Selected
-          </button>
-          <button
-            onClick={() => onBatchDeny(selectedIds).then(() => setSelected({}))}
-            className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-muted-foreground"
-          >
-            Deny Selected
-          </button>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="text-xs text-muted-foreground">
+          {selectedIds.length > 0 ? `${selectedIds.length} selected` : "Select items to batch"}
         </div>
-      )}
+
+        <button
+          type="button"
+          disabled={selectedIds.length === 0}
+          onClick={() => onBatchApprove(selectedIds).then(() => setSelected({}))}
+          className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-foreground disabled:opacity-40"
+        >
+          Approve Selected
+        </button>
+
+        <button
+          type="button"
+          disabled={selectedIds.length === 0}
+          onClick={() => onBatchDeny(selectedIds).then(() => setSelected({}))}
+          className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-muted-foreground disabled:opacity-40"
+        >
+          Deny Selected
+        </button>
+
+        <button
+          type="button"
+          disabled={canApplySelectedIds.length === 0 || bulkApplying}
+          onClick={bulkApply}
+          className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-foreground disabled:opacity-40"
+        >
+          {bulkApplying ? "Applying…" : `Apply Selected (${canApplySelectedIds.length})`}
+        </button>
+      </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2">
+      <div className="mb-3 flex flex-wrap gap-2">
         {([
           { key: "drafts" as const, label: `AKB Drafts (${draftProposals.length})` },
           { key: "projects" as const, label: `Projects (${projectProposals.length})` },
@@ -198,6 +263,7 @@ export function IngestProposalPanel({
         ]).map((t) => (
           <button
             key={t.key}
+            type="button"
             onClick={() => setTab(t.key)}
             className={cn(
               "text-xs px-2 py-1 rounded border border-border",
@@ -210,9 +276,9 @@ export function IngestProposalPanel({
       </div>
 
       {/* Content */}
-      <ScrollArea className="max-h-[500px]">
-        <div className="space-y-2">
-          {tab !== "entities" && currentTabProposals.map((p) => (
+      <div className="space-y-2">
+        {tab !== "entities" &&
+          currentTabProposals.map((p) => (
             <ProposalCard
               key={p.id}
               proposal={p}
@@ -225,33 +291,29 @@ export function IngestProposalPanel({
             />
           ))}
 
-          {tab === "entities" && entities.map((e) => (
-            <div key={e.id} className="border border-border rounded p-2">
-              <div className="flex items-center justify-between">
-                <div className="text-xs font-mono text-foreground">{e.entity_name}</div>
-                <div className="text-[10px] text-muted-foreground">
-                  {e.entity_type} • {Math.round(e.confidence * 100)}%
-                </div>
+        {tab === "entities" &&
+          entities.map((e) => (
+            <div key={e.id} className="rounded-xl border border-border bg-background/30 p-3">
+              <div className="text-sm font-medium text-foreground">{e.entity_name}</div>
+              <div className="text-xs text-muted-foreground">
+                {e.entity_type} • {Math.round((e.confidence || 0) * 100)}%
               </div>
               {e.payload_json?.excerpt && (
-                <div className="text-[10px] text-muted-foreground mt-1 italic">
-                  "{e.payload_json.excerpt}"
-                </div>
+                <div className="mt-2 text-xs text-muted-foreground">"{e.payload_json.excerpt}"</div>
               )}
             </div>
           ))}
 
-          {tab === "drafts" && draftProposals.length === 0 && (
-            <div className="text-xs text-muted-foreground">No AKB drafts proposed.</div>
-          )}
-          {tab === "projects" && projectProposals.length === 0 && (
-            <div className="text-xs text-muted-foreground">No projects detected.</div>
-          )}
-          {tab === "artifacts" && artifactProposals.length === 0 && (
-            <div className="text-xs text-muted-foreground">No artifacts suggested.</div>
-          )}
-        </div>
-      </ScrollArea>
+        {tab === "drafts" && draftProposals.length === 0 && (
+          <div className="text-sm text-muted-foreground">No AKB drafts proposed.</div>
+        )}
+        {tab === "projects" && projectProposals.length === 0 && (
+          <div className="text-sm text-muted-foreground">No projects detected.</div>
+        )}
+        {tab === "artifacts" && artifactProposals.length === 0 && (
+          <div className="text-sm text-muted-foreground">No artifacts suggested.</div>
+        )}
+      </div>
 
       {/* Edit Modal */}
       {editing && (
@@ -265,6 +327,7 @@ export function IngestProposalPanel({
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setEditing(null)}
                 className="rounded px-2 py-1 text-sm text-muted-foreground hover:text-foreground"
               >
@@ -272,7 +335,7 @@ export function IngestProposalPanel({
               </button>
             </div>
 
-            <label className="block text-xs text-muted-foreground">Summary</label>
+            <div className="text-xs text-muted-foreground">Summary</div>
             <input
               value={editSummary}
               onChange={(e) => setEditSummary(e.target.value)}
@@ -280,7 +343,7 @@ export function IngestProposalPanel({
             />
 
             <div className="mt-3">
-              <label className="block text-xs text-muted-foreground">Payload (JSON)</label>
+              <div className="text-xs text-muted-foreground">Payload (JSON)</div>
               <textarea
                 value={editPayload}
                 onChange={(e) => setEditPayload(e.target.value)}
@@ -289,14 +352,16 @@ export function IngestProposalPanel({
               />
             </div>
 
-            <div className="mt-4 flex gap-2 justify-end">
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
               <button
+                type="button"
                 onClick={() => setEditing(null)}
                 className="rounded-full border border-border px-4 py-2 text-sm hover:bg-muted/40 text-muted-foreground"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={saveEdit}
                 className="rounded-full border border-border px-4 py-2 text-sm hover:bg-muted/40 text-foreground"
               >
@@ -327,100 +392,121 @@ function ProposalCard({
   onEdit: () => void;
   onApply: () => void;
 }) {
-  const isDone = proposal.status === "applied";
-  const canApply = proposal.status === "approved" || proposal.status === "edited";
+  const isApplied = proposal.status === "applied";
+  const isDenied = proposal.status === "denied";
+  const isApprovedOrEdited = proposal.status === "approved" || proposal.status === "edited";
+  const canApply = isApprovedOrEdited;
   const isTemplate = proposal.proposal_type === "template_clone";
-  const displaySummary = proposal.edited_summary ?? proposal.summary;
+  const displaySummary = proposal.edited_summary ?? proposal.summary ?? "(Untitled)";
+  const displayTarget = proposal.target ? ` → ${proposal.target}` : "";
+  const bullets = (proposal.edited_payload_json?.bullets || proposal.payload_json?.bullets) as
+    | string[]
+    | undefined;
 
   return (
-    <div className={cn("border border-border rounded p-2", isDone && "opacity-50")}>
-      <div className="flex items-start gap-2">
+    <div
+      className={cn(
+        "rounded-xl border border-border p-3",
+        "flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between",
+        isApplied && "bg-muted/10 opacity-80",
+        isDenied && "opacity-60"
+      )}
+    >
+      <div className="flex items-start gap-3">
         <input
           type="checkbox"
           checked={checked}
           onChange={(e) => onCheckChange(e.target.checked)}
           className="mt-1 shrink-0"
-          disabled={isDone}
+          disabled={isApplied}
         />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between">
-            <div className="text-xs font-mono text-foreground truncate">{displaySummary}</div>
-            <div className="text-[10px] text-muted-foreground shrink-0 ml-2">
-              {TYPE_LABELS[proposal.proposal_type] || proposal.proposal_type} → {proposal.target}
-            </div>
+
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="text-sm font-medium text-foreground">{displaySummary}</div>
+            {isApplied && (
+              <span className="text-[10px] rounded-full border border-border px-2 py-0.5 text-muted-foreground">
+                APPLIED
+              </span>
+            )}
+            {proposal.status !== "proposed" && !isApplied && (
+              <span className="text-[10px] rounded-full border border-border px-2 py-0.5 text-muted-foreground">
+                {proposal.status.toUpperCase()}
+              </span>
+            )}
           </div>
 
-          {/* Source excerpts */}
+          <div className="mt-0.5 text-xs text-muted-foreground">
+            {(TYPE_LABELS[proposal.proposal_type] || proposal.proposal_type) + displayTarget}
+          </div>
+
           {proposal.source_excerpts?.length > 0 && (
-            <div className="mt-1 space-y-0.5">
-              <div className="text-[10px] text-muted-foreground font-mono">From your upload:</div>
+            <div className="mt-2 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground/80">From your upload:</span>{" "}
               {proposal.source_excerpts.slice(0, 2).map((s: any, i: number) => (
-                <div key={i} className="text-[10px] text-muted-foreground italic pl-2">
-                  "{(s.excerpt || "").slice(0, 80)}{(s.excerpt || "").length > 80 ? "…" : ""}"
-                </div>
+                <span key={i} className="mr-2">
+                  "{String(s.excerpt || "").slice(0, 80)}
+                  {String(s.excerpt || "").length > 80 ? "…" : ""}"
+                </span>
               ))}
             </div>
           )}
 
-          {/* Bullets for AKB drafts */}
-          {(proposal.edited_payload_json?.bullets || proposal.payload_json?.bullets) && (
-            <div className="mt-1 text-[11px] text-foreground space-y-0.5">
-              {((proposal.edited_payload_json?.bullets || proposal.payload_json?.bullets) as string[]).slice(0, 4).map((b, i) => (
+          {Array.isArray(bullets) && bullets.length > 0 && (
+            <div className="mt-2 text-xs text-muted-foreground">
+              {bullets.slice(0, 4).map((b, i) => (
                 <div key={i}>• {b}</div>
               ))}
             </div>
           )}
-
-          {/* Status badge */}
-          {(proposal.status !== "proposed") && (
-            <div className={cn(
-              "mt-1 text-[10px] font-mono",
-              proposal.status === "approved" ? "text-green-600" : "",
-              proposal.status === "denied" ? "text-red-500" : "",
-              proposal.status === "edited" ? "text-yellow-600" : "",
-              proposal.status === "applied" ? "text-blue-600" : "",
-            )}>
-              {proposal.status.toUpperCase()}
-            </div>
-          )}
-
-          {/* Actions */}
-          {!isDone && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              <button
-                onClick={onEdit}
-                className="text-xs border border-border rounded px-2 py-1 hover:bg-muted/40 text-foreground"
-              >
-                Edit
-              </button>
-              {proposal.status !== "approved" && proposal.status !== "edited" && (
-                <button
-                  onClick={onApprove}
-                  className="text-xs border border-border rounded px-2 py-1 hover:bg-muted/40 text-foreground"
-                >
-                  Approve
-                </button>
-              )}
-              {proposal.status !== "denied" && (
-                <button
-                  onClick={onDeny}
-                  className="text-xs border border-border rounded px-2 py-1 hover:bg-muted/40 text-muted-foreground"
-                >
-                  Deny
-                </button>
-              )}
-              {canApply && (
-                <button
-                  onClick={onApply}
-                  className="text-xs border border-border rounded px-2 py-1 hover:bg-muted/40 text-foreground font-medium"
-                >
-                  {isTemplate ? "Clone Template" : "Apply"}
-                </button>
-              )}
-            </div>
-          )}
         </div>
       </div>
+
+      {!isApplied ? (
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-foreground"
+            disabled={isDenied}
+          >
+            Edit
+          </button>
+
+          {proposal.status !== "approved" && proposal.status !== "edited" && (
+            <button
+              type="button"
+              onClick={onApprove}
+              className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-foreground"
+              disabled={isDenied}
+            >
+              Approve
+            </button>
+          )}
+
+          {proposal.status !== "denied" && (
+            <button
+              type="button"
+              onClick={onDeny}
+              className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-muted-foreground"
+            >
+              Deny
+            </button>
+          )}
+
+          {canApply && (
+            <button
+              type="button"
+              onClick={onApply}
+              className="text-xs border border-border rounded-full px-3 py-1 hover:bg-muted/40 text-foreground"
+            >
+              {isTemplate ? "Clone Template" : "Apply"}
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="text-xs text-muted-foreground sm:text-right">Applied</div>
+      )}
     </div>
   );
 }
