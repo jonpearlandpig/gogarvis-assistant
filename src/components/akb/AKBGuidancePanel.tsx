@@ -31,6 +31,7 @@ interface Props {
   };
   onLock: (domainKey: string) => Promise<void> | void;
   onContinue: (domainKey: string, choice?: string) => void;
+  onClose?: () => void;
 }
 
 export function AKBGuidancePanel({ progress, onLock, onContinue }: Props) {
@@ -43,44 +44,41 @@ export function AKBGuidancePanel({ progress, onLock, onContinue }: Props) {
   );
 
   return (
-    <div className="rounded-2xl border border-border bg-background/60 backdrop-blur p-4 shadow-sm">
+    <div className="w-full rounded-xl border border-border bg-background/80 backdrop-blur shadow-sm p-3 space-y-3">
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-xs font-mono text-foreground uppercase tracking-wide">
-            AKB Progress
-          </div>
-          <div className="text-[11px] text-muted-foreground mt-1">
+          <div className="text-xs font-mono uppercase tracking-wide text-foreground">AKB Progress</div>
+          <div className="text-[11px] text-muted-foreground">
             {progress.coveragePercent}% · {progress.completedCount}/{progress.total} locked
           </div>
         </div>
-        {next ? (
-          <div className="text-[11px] text-muted-foreground">
-            Next: <span className="text-foreground">{LABELS[next] || next}</span>
-          </div>
-        ) : (
-          <div className="text-[11px] text-muted-foreground">All minimums met</div>
-        )}
+        <div className="text-[11px] text-muted-foreground">
+          {next ? <>Next: <span className="text-foreground">{LABELS[next] || next}</span></> : "All minimums met"}
+        </div>
       </div>
 
       {/* Domain status list */}
-      <div className="mt-3 space-y-1">
+      <div className="space-y-1">
         {progress.domains.map((d) => (
           <div
             key={d.domain_key}
             className={cn(
-              "flex items-center gap-2 text-xs rounded px-2 py-1 border border-transparent",
-              d.locked && "animate-pulse border-border bg-muted/20"
+              "flex items-center justify-between border border-border rounded px-2 py-2",
+              d.locked && "animate-pulse"
             )}
           >
-            <span className="text-[10px] w-3 text-center">
-              {d.locked ? "🔒" : d.status === "complete" ? "✔" : d.status === "draft" ? "◐" : "○"}
-            </span>
-            <span className={d.status === "complete" || d.locked ? "text-foreground" : "text-muted-foreground"}>
-              {LABELS[d.domain_key] ?? d.domain_key}
-            </span>
-            {d.min_met && !d.locked && (
-              <span className="text-[9px] font-mono text-primary/70 ml-auto">ready to lock</span>
+            <div className="flex items-center gap-2">
+              <div className="text-xs">
+                {d.locked ? "🔒" : d.status === "complete" ? "✔" : d.status === "draft" ? "◐" : "○"}
+              </div>
+              <div className="text-xs text-foreground">{LABELS[d.domain_key] ?? d.domain_key}</div>
+            </div>
+
+            {d.min_met && !d.locked ? (
+              <div className="text-[10px] text-muted-foreground">ready to lock</div>
+            ) : (
+              <div className="text-[10px] text-muted-foreground">{d.locked ? "locked" : ""}</div>
             )}
           </div>
         ))}
@@ -88,14 +86,13 @@ export function AKBGuidancePanel({ progress, onLock, onContinue }: Props) {
 
       {/* Lockable domains */}
       {lockables.length > 0 && (
-        <div className="mt-4">
-          <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-wide">
-            Ready to lock
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2">
+        <div className="space-y-2">
+          <div className="text-[10px] font-mono text-foreground uppercase tracking-wide">Ready to lock</div>
+          <div className="flex flex-wrap gap-2">
             {lockables.map((d) => (
               <button
                 key={d.key}
+                type="button"
                 disabled={locking === d.key}
                 onClick={async () => {
                   setLocking(d.key);
@@ -109,13 +106,12 @@ export function AKBGuidancePanel({ progress, onLock, onContinue }: Props) {
                   "rounded-full border border-border px-3 py-1 text-xs transition-colors",
                   "hover:bg-muted/40 disabled:opacity-60 disabled:hover:bg-transparent"
                 )}
-                type="button"
               >
                 {locking === d.key ? `Locking ${d.label}…` : `Lock ${d.label}`}
               </button>
             ))}
           </div>
-          <div className="text-[10px] text-muted-foreground mt-2">
+          <div className="text-[10px] text-muted-foreground">
             Locking is optional. You can always add more before locking.
           </div>
         </div>
@@ -123,28 +119,28 @@ export function AKBGuidancePanel({ progress, onLock, onContinue }: Props) {
 
       {/* Continue building next domain */}
       {next && (
-        <div className="mt-4">
-          <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-wide">
-            Continue building
+        <div className="space-y-2">
+          <div className="text-[10px] font-mono text-foreground uppercase tracking-wide">Continue building</div>
+          <div className="text-[10px] text-muted-foreground">
+            Choose one to populate {LABELS[next] || next} quickly:
           </div>
-          <div className="mt-2 text-[11px] text-muted-foreground">
-            Choose one to populate <span className="text-foreground">{LABELS[next] || next}</span> quickly:
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2">
+
+          <div className="flex flex-wrap gap-2">
             {(QUICK_CHOICES[next] || []).map((c) => (
               <button
                 key={c}
-                className="rounded-full border border-border bg-muted/20 px-3 py-1 text-xs hover:bg-muted/40 transition-colors"
-                onClick={() => onContinue(next, c)}
                 type="button"
+                onClick={() => onContinue(next, c)}
+                className="rounded-full border border-border bg-muted/30 px-3 py-1 text-xs hover:bg-muted/50 transition-colors"
               >
                 {c}
               </button>
             ))}
+
             <button
-              className="rounded-full border border-border px-3 py-1 text-xs hover:bg-muted/40 transition-colors"
-              onClick={() => onContinue(next)}
               type="button"
+              onClick={() => onContinue(next)}
+              className="rounded-full border border-border px-3 py-1 text-xs hover:bg-muted/40 transition-colors"
             >
               Custom…
             </button>
