@@ -45,6 +45,7 @@ import { computeJournalScore } from "@/lib/journal-signal";
 import garvisLogo from "@/assets/garvis_logo_black.png";
 import { ScopeIndicator } from "@/components/workspace/ScopeIndicator";
 import { useScopedAKB } from "@/hooks/useScopedAKB";
+import { AKBProgressTLDR } from "@/components/workspace/AKBProgressTLDR";
 
 // ─── Helpers ──────────────────────────────────────────────
 const daysBetween = (a: Date, b: Date) =>
@@ -537,6 +538,29 @@ const Workspace = () => {
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden">
               {user?.id && <ModuleNudge userId={user.id} />}
+
+              {/* TL;DR card: always-visible smart actions */}
+              {gate.hasFirstDataset && akbProgress.data && !showAKBGuide && (
+                <div className="px-3 py-2">
+                  <AKBProgressTLDR
+                    progress={akbProgress.data}
+                    workspaceUnlocked={workspaceUnlocked}
+                    onOpenBuilder={(step) => {
+                      setAKBBuilderStep(step);
+                      setShowAKBBuilder(true);
+                    }}
+                    onOpenGuide={() => setShowAKBGuide(true)}
+                    onCreateDrafts={() => {
+                      setShowNextSteps(false);
+                      setNextStepsSource(null);
+                      setShowNextSteps(true);
+                    }}
+                    onCreateArtifact={() =>
+                      handleSend("goGarvis: Welcome to Artifacts. Turn this into a real file.")
+                    }
+                  />
+                </div>
+              )}
 
               {showAKBGuide && akbProgress.data && (
                 <div className="px-3 py-2">
