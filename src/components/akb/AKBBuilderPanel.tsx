@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAKBBuilder } from "@/hooks/useAKBBuilder";
 import { useAuth } from "@/hooks/useAuth";
-import { AKB_DOMAINS } from "@/lib/akbBuilder";
+
 import { uploadAKBFile } from "@/lib/akbUpload";
 import { DomainCoverageChecklist } from "@/components/akb/DomainCoverageChecklist";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -170,20 +170,13 @@ export function AKBBuilderPanel({
           <div className="text-xs font-mono text-foreground">
             Quick Note → Draft
           </div>
-          <div className="flex gap-2">
-            <select
-              className="text-xs border border-border rounded px-2 py-1 bg-background text-foreground"
-              value={noteDomain}
-              onChange={(e) => setNoteDomain(e.target.value as typeof noteDomain)}
-            >
-              {AKB_DOMAINS.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
+          {/* Domain (controlled by stepper) */}
+          <div className="mb-2 text-xs text-muted-foreground">
+            Domain: <span className="text-foreground">{DOMAIN_LABELS[noteDomain] ?? noteDomain}</span>
+          </div>
+          <div>
             <input
-              className="flex-1 text-xs border border-border rounded px-2 py-1 bg-background text-foreground placeholder:text-muted-foreground"
+              className="w-full text-xs border border-border rounded px-2 py-1 bg-background text-foreground placeholder:text-muted-foreground"
               placeholder="Title"
               value={noteTitle}
               onChange={(e) => setNoteTitle(e.target.value)}
