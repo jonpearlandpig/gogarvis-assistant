@@ -15,16 +15,16 @@ export function WhyAKBCollapsible({
       <button
         type="button"
         onClick={() => setOpen((p) => !p)}
-        className="w-full flex items-center justify-between rounded-xl border border-border bg-muted/20 px-4 py-3 text-sm text-foreground hover:bg-muted/30 transition-colors"
+        className="w-full flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/20 px-4 py-3 text-sm text-foreground hover:bg-muted/30 transition-colors"
       >
-        <span className="font-mono">Why build your AKB first?</span>
-        <span className="text-muted-foreground">{open ? "▾" : "▸"}</span>
+        <span className="font-mono truncate">Why build your AKB first?</span>
+        <span className="shrink-0 text-muted-foreground">{open ? "▾" : "▸"}</span>
       </button>
 
       <div
         className={cn(
           "overflow-hidden transition-all",
-          open ? "max-h-[560px] opacity-100 mt-2" : "max-h-0 opacity-0 mt-0"
+          open ? "max-h-[720px] opacity-100 mt-2" : "max-h-0 opacity-0 mt-0"
         )}
       >
         <div className="rounded-xl border border-border bg-background/40 px-4 py-3 text-sm text-muted-foreground">
@@ -43,7 +43,7 @@ export function WhyAKBCollapsible({
             </p>
           </div>
 
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
             <button
               type="button"
               onClick={() => onStartBuilding?.()}
