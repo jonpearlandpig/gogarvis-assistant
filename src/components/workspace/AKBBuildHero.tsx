@@ -15,6 +15,7 @@ interface AKBBuildHeroProps {
   workspaceId?: string | null;
   onFilesUploaded?: () => void;
   structureEntries?: StructureEntry[];
+  onStartBuilding?: () => void;
 }
 
 export function AKBBuildHero({
@@ -24,6 +25,7 @@ export function AKBBuildHero({
   workspaceId,
   onFilesUploaded,
   structureEntries = [],
+  onStartBuilding,
 }: AKBBuildHeroProps) {
   const [input, setInput] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -98,6 +100,29 @@ export function AKBBuildHero({
               Lock each category when it feels right.
               Control stays with you.
             </p>
+          </div>
+
+          {/* CTAs */}
+          <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => onStartBuilding?.()}
+              className="w-full sm:w-auto rounded-full border border-border px-5 py-2 text-sm hover:bg-muted/40 transition-colors"
+            >
+              Start Building My System
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                onSend(
+                  "Explore First (Foundation Mode): Give me a brief overview of what you can do right now, and what unlocks as my AKB coverage increases. Keep it concise."
+                )
+              }
+              className="w-full sm:w-auto rounded-full border border-border px-5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
+            >
+              Explore First (Limited Mode)
+            </button>
           </div>
         </div>
 
