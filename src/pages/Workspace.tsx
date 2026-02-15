@@ -14,7 +14,7 @@ import {
   OperatorModeBanner,
   SovereignRenameModal,
 } from "@/components/workspace/ProgressionModals";
-import { SafeNextStep } from "@/components/system/SafeNextStep";
+
 import { FoundationUnlockOverlay } from "@/components/system/FoundationUnlockOverlay";
 import { ModuleNudge } from "@/components/modules/ModuleNudge";
 
@@ -591,6 +591,8 @@ const Workspace = () => {
                 onUrlIngested={() => gate.refetch()}
                 userId={user?.id}
                 workspaceId={null}
+                onQuickStart={handleSafeNextStep}
+                quickStartStage={gate.hasFirstDataset ? safeStage : undefined}
                 onCreateArtifact={async (content) => {
                   if (akbMode !== "full") {
                     toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
@@ -717,14 +719,6 @@ const Workspace = () => {
         }}
       />
 
-      {/* ── Safe Next Step ── */}
-      {gate.hasFirstDataset && (
-        <SafeNextStep
-          state={safeStage}
-          onAction={handleSafeNextStep}
-          persistKey="safe_next_step"
-        />
-      )}
     </div>
   );
 };
