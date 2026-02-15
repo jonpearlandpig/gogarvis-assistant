@@ -352,6 +352,68 @@ const Workspace = () => {
     }
   }, [user?.id, akbMode, akbCoverage, createArtifact]);
 
+  // ─── Safe Next Step helpers ─────────────────────────────
+  const openBuilderStep = (
+    step: "identity" | "goals" | "offer" | "audience" | "assets" | "financial_model"
+  ) => {
+    setAKBBuilderStep(step);
+    setShowAKBBuilder(true);
+  };
+
+  const safeStage:
+    | "akb_identity"
+    | "akb_goals"
+    | "akb_offer"
+    | "foundation_complete"
+    | "workspace" =
+    celebrated80
+      ? "foundation_complete"
+      : workspaceUnlocked
+      ? "workspace"
+      : akbCoverage < 20
+      ? "akb_identity"
+      : akbCoverage < 40
+      ? "akb_goals"
+      : "akb_offer";
+
+  const handleSafeNextStep = (action: string) => {
+    switch (action) {
+      case "save_identity":
+        openBuilderStep("identity");
+        return;
+      case "save_goals":
+        openBuilderStep("goals");
+        return;
+      case "save_offer":
+        openBuilderStep("offer");
+        return;
+      case "skip_identity":
+      case "continue_building":
+        setShowAKBGuide(true);
+        return;
+      case "next_offer":
+        openBuilderStep("offer");
+        return;
+      case "enter_workspace":
+        setCelebrated80(false);
+        return;
+      case "start_project":
+        scopedAKB.scaffoldOnUnlock();
+        setCelebrated80(false);
+        return;
+      case "create_artifact":
+        handleSend("goGarvis: Welcome to Artifacts. Turn this into a real file.");
+        return;
+      case "new_project":
+        scopedAKB.addProject("New Project");
+        return;
+      case "suggest":
+      default:
+        handleSend("goGarvis: What is the safest next step for me right now?");
+        return;
+    }
+  };
+
   // ─── Render ─────────────────────────────────────────────
   return (
     <div className="flex h-screen w-full flex-col bg-background">
@@ -616,59 +678,9 @@ const Workspace = () => {
       {/* ── Safe Next Step ── */}
       {gate.hasFirstDataset && (
         <SafeNextStep
-          state={
-            celebrated80
-              ? "foundation_complete"
-              : workspaceUnlocked
-              ? "workspace"
-              : akbCoverage < 20
-              ? "akb_identity"
-              : akbCoverage < 40
-              ? "akb_goals"
-              : "akb_offer"
-          }
-          onAction={(action) => {
-            const openBuilderStep = (step: typeof akbBuilderStep) => {
-              setAKBBuilderStep(step);
-              setShowAKBBuilder(true);
-            };
-
-            switch (action) {
-              case "save_identity":
-                openBuilderStep("identity");
-                break;
-              case "save_goals":
-                openBuilderStep("goals");
-                break;
-              case "save_offer":
-                openBuilderStep("offer");
-                break;
-              case "skip_identity":
-              case "continue_building":
-                setShowAKBGuide(true);
-                break;
-              case "next_offer":
-                openBuilderStep("offer");
-                break;
-              case "enter_workspace":
-                setCelebrated80(false);
-                break;
-              case "start_project":
-                scopedAKB.scaffoldOnUnlock();
-                setCelebrated80(false);
-                break;
-              case "create_artifact":
-                handleSend("goGarvis: Welcome to Artifacts. Turn this into a real file.");
-                break;
-              case "new_project":
-                scopedAKB.addProject("New Project");
-                break;
-              case "suggest":
-              default:
-                handleSend("goGarvis: What is the safest next step for me right now?");
-                break;
-            }
-          }}
+          state={safeStage}
+          onAction={handleSafeNextStep}
+          persistKey="safe_next_step"
         />
       )}
     </div>
