@@ -572,6 +572,11 @@ const Workspace = () => {
                       ingest.openRun(id);
                       setShowIngestPanel(true);
                     }}
+                    onChanged={() => {
+                      akbDomains.refetch();
+                      akbProgress.refetch();
+                      gate.refetch();
+                    }}
                   />
                 </div>
               )}

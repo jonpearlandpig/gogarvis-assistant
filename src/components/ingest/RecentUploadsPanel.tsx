@@ -27,11 +27,13 @@ export function RecentUploadsPanel({
   userId,
   workspaceId,
   onOpenRun,
+  onChanged,
   className,
 }: {
   userId: string | null;
   workspaceId: string | null;
   onOpenRun: (runId: string) => void;
+  onChanged?: () => void;
   className?: string;
 }) {
   const [runs, setRuns] = useState<IngestRunRow[]>([]);
@@ -43,7 +45,7 @@ export function RecentUploadsPanel({
     if (!userId) return;
     setLoading(true);
     try {
-      const query = supabase
+      let query = supabase
         .from("ingest_runs")
         .select("id,created_at,status,detected_types,source_file_ids")
         .eq("user_id", userId)
@@ -52,7 +54,7 @@ export function RecentUploadsPanel({
         .limit(20);
 
       if (workspaceId) {
-        query.eq("workspace_id", workspaceId);
+        query = query.eq("workspace_id", workspaceId);
       }
 
       const { data: r, error: e1 } = await query;
@@ -130,6 +132,7 @@ export function RecentUploadsPanel({
 
       toast.success(`Applied ${draftIds.length} AKB draft(s)`);
       await refetch();
+      onChanged?.();
     } catch (err: any) {
       toast.error(err?.message || "Approve & Apply failed");
     } finally {
@@ -158,6 +161,7 @@ export function RecentUploadsPanel({
 
       toast.success("Upload removed");
       await refetch();
+      onChanged?.();
     } catch (err: any) {
       toast.error(err?.message || "Remove failed");
     } finally {
