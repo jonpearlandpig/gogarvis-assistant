@@ -64,6 +64,7 @@ const Workspace = () => {
   const [showAKB, setShowAKB] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showAKBBuilder, setShowAKBBuilder] = useState(false);
+  const [akbBuilderStep, setAKBBuilderStep] = useState<"identity"|"goals"|"offer"|"audience"|"assets"|"financial_model">("identity");
   const abortRef = useRef<AbortController | null>(null);
   const [uiAction, setUiAction] = useState<null | { type: string; payload?: any }>(null);
 
@@ -616,7 +617,9 @@ const Workspace = () => {
       {gate.hasFirstDataset && (
         <SafeNextStep
           state={
-            akbCoverage >= 80
+            celebrated80
+              ? "foundation_complete"
+              : workspaceUnlocked
               ? "workspace"
               : akbCoverage < 20
               ? "akb_identity"
@@ -625,16 +628,27 @@ const Workspace = () => {
               : "akb_offer"
           }
           onAction={(action) => {
+            const openBuilderStep = (step: typeof akbBuilderStep) => {
+              setAKBBuilderStep(step);
+              setShowAKBBuilder(true);
+            };
+
             switch (action) {
               case "save_identity":
+                openBuilderStep("identity");
+                break;
               case "save_goals":
+                openBuilderStep("goals");
+                break;
               case "save_offer":
-                setShowAKBBuilder(true);
+                openBuilderStep("offer");
                 break;
               case "skip_identity":
-              case "next_offer":
               case "continue_building":
                 setShowAKBGuide(true);
+                break;
+              case "next_offer":
+                openBuilderStep("offer");
                 break;
               case "enter_workspace":
                 setCelebrated80(false);
@@ -644,13 +658,14 @@ const Workspace = () => {
                 setCelebrated80(false);
                 break;
               case "create_artifact":
-                handleSend("Create my first artifact.");
+                handleSend("goGarvis: Welcome to Artifacts. Turn this into a real file.");
                 break;
               case "new_project":
                 scopedAKB.addProject("New Project");
                 break;
               case "suggest":
-                handleSend("What should I do next?");
+              default:
+                handleSend("goGarvis: What is the safest next step for me right now?");
                 break;
             }
           }}
