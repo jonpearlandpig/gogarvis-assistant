@@ -17,7 +17,7 @@ export function WhyAKBCollapsible({
         onClick={() => setOpen((p) => !p)}
         className="w-full flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/20 px-4 py-3 text-sm text-foreground hover:bg-muted/30 transition-colors"
       >
-        <span className="font-mono truncate">Why build your AKB first?</span>
+        <span className="font-mono truncate">goGarvis?</span>
         <span className="shrink-0 text-muted-foreground">{open ? "▾" : "▸"}</span>
       </button>
 
@@ -29,28 +29,40 @@ export function WhyAKBCollapsible({
       >
         <div className="rounded-xl border border-border bg-background/40 px-4 py-3 text-sm text-muted-foreground">
           <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
-            <p>
-              Most AI tools fail for predictable reasons: hallucinations, drift,
-              generic answers, and overreach.
+            <p className="font-medium text-foreground">
+              What actually happens when you say "goGarvis"?
             </p>
 
             <p>
-              GARVIS prevents that by aligning to your Authority Knowledge Base (AKB)
-              first — your tone, deal breakers, strategic intent, and operating posture.
+              When you say "goGarvis," you're not asking a chatbot.
+              You're activating a system that works from your Authority Knowledge Base (AKB).
             </p>
 
             <p>
-              Wherever you are on the AI spectrum—
+              Most AI tools guess. They hallucinate. They drift.
+              They give generic answers because they don't truly know you.
             </p>
 
             <p>
-              If you're early-stage with a handful of notes and rough ideas,
+              GARVIS is different.
+              It does not start with output.
+              It starts with alignment.
+            </p>
+
+            <p>
+              Your AKB defines your tone, deal breakers, strategic intent,
+              operating posture, and patterns.
+              GARVIS then works inside those boundaries.
+            </p>
+
+            <p>
+              Early-stage founder with a few notes?
               GARVIS multiplies clarity.
             </p>
 
             <p>
-              If you bring a full executive brief, financial model,
-              go-to-market strategy, and years of operating history,
+              10-year operator with financials, GTM strategy, inventory,
+              and operating history?
               GARVIS compounds leverage.
             </p>
 
@@ -59,18 +71,18 @@ export function WhyAKBCollapsible({
             </p>
 
             <div className="font-medium text-foreground">
-              <span className="block">
-                The bigger the WHAT (your AKB),
-              </span>
-              <span className="block">
-                the bigger the WOW (GARVIS outputs).
-              </span>
+              <span className="block">The bigger the WHAT (your AKB),</span>
+              <span className="block">the bigger the WOW (GARVIS output).</span>
             </div>
 
             <p>
-              You don't have to complete everything today.
-              Lock each category when it feels right.
-              Control stays with you.
+              GARVIS doesn't replace you.
+              It amplifies you.
+            </p>
+
+            <p>
+              You build the space.
+              GARVIS works inside it.
             </p>
           </div>
 
