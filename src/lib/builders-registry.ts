@@ -1,17 +1,17 @@
-/**
- * Builders Registry — single source of truth for user-facing builders.
- * Each builder maps its outputs into AKB domains internally;
- * users never see domain vocabulary.
- */
-
-export type BuilderLevel = "beginner" | "all" | "advanced";
+// src/lib/builders-registry.ts
+export type BuilderLevel = "beginner" | "intermediate" | "advanced";
 
 export type BuilderAction =
-  | { type: "rpc"; fn: string; args?: Record<string, string> }
-  | { type: "open_builder"; step: string }
-  | { type: "open_guide" }
-  | { type: "send_chat"; message: string }
-  | { type: "create_artifact" };
+  | { type: "open_builder"; step: "identity" | "exec_summary" | "contacts" }
+  | { type: "create_artifact" }
+  | { type: "send_chat"; message: string };
+
+export type BuilderContext = {
+  hasFirstDataset: boolean;
+  workspaceUnlocked: boolean;
+  coveragePercent: number;
+  lockedDomains: string[]; // e.g. ["identity"]
+};
 
 export interface BuilderDef {
   id: string;
@@ -19,30 +19,11 @@ export interface BuilderDef {
   subtitle: string;
   timeEstimate: string;
   level: BuilderLevel;
-  /** Domains this builder writes to (hidden from user) */
-  targetDomains: string[];
-  /** When this builder should surface (checked against AKBProgress) */
-  triggerCondition: (ctx: BuilderContext) => boolean;
-  /** Primary action when user clicks "Start" */
+  trigger: (ctx: BuilderContext) => boolean;
   primaryAction: BuilderAction;
-  /** Whether auto-draft toggle is available */
   hasAutoDraft: boolean;
-  /** Sort priority (higher = surfaces first) */
   priority: number;
 }
-
-export type BuilderContext = {
-  coveragePercent: number;
-  completedDomains: string[];
-  lockedDomains: string[];
-  lockableDomains: string[];
-  nextDomain: string | null;
-  hasFirstDataset: boolean;
-  workspaceUnlocked: boolean;
-  hasDrafts: boolean;
-};
-
-// ─── Builder definitions ───────────────────────────────────
 
 export const BUILDERS: BuilderDef[] = [
   {
@@ -51,9 +32,7 @@ export const BUILDERS: BuilderDef[] = [
     subtitle: "Name, tone, non-negotiables, operating posture",
     timeEstimate: "2 min",
     level: "beginner",
-    targetDomains: ["identity"],
-    triggerCondition: (ctx) =>
-      !ctx.lockedDomains.includes("identity") && ctx.hasFirstDataset,
+    trigger: (ctx) => ctx.hasFirstDataset && !ctx.lockedDomains.includes("identity"),
     primaryAction: { type: "open_builder", step: "identity" },
     hasAutoDraft: true,
     priority: 100,
@@ -61,29 +40,21 @@ export const BUILDERS: BuilderDef[] = [
   {
     id: "exec_summary_builder",
     title: "Executive Summary → System Scaffold",
-    subtitle: "Upload your brief; GARVIS creates project + drafts",
+    subtitle: "Paste or upload a brief; GARVIS proposes drafts + project scaffold",
     timeEstimate: "3 min",
     level: "beginner",
-    targetDomains: ["goals", "offer", "audience"],
-    triggerCondition: (ctx) =>
-      ctx.hasFirstDataset &&
-      ctx.lockedDomains.includes("identity") &&
-      ctx.coveragePercent < 80,
-    primaryAction: {
-      type: "send_chat",
-      message: "goGarvis: I want to build my executive summary. Walk me through it.",
-    },
+    trigger: (ctx) => ctx.hasFirstDataset && ctx.lockedDomains.includes("identity") && ctx.coveragePercent < 80,
+    primaryAction: { type: "send_chat", message: "goGarvis: Help me build my executive summary. QuickStart me." },
     hasAutoDraft: true,
     priority: 90,
   },
   {
     id: "first_artifact",
     title: "Create Your First Artifact",
-    subtitle: "Turn an output into a real file (doc, PDF, sheet)",
+    subtitle: "Turn an output into a real file (doc / pdf / sheet)",
     timeEstimate: "1 min",
     level: "beginner",
-    targetDomains: [],
-    triggerCondition: (ctx) => ctx.workspaceUnlocked,
+    trigger: (ctx) => ctx.workspaceUnlocked,
     primaryAction: { type: "create_artifact" },
     hasAutoDraft: false,
     priority: 85,
@@ -91,30 +62,16 @@ export const BUILDERS: BuilderDef[] = [
   {
     id: "contacts_builder",
     title: "Contacts Builder",
-    subtitle: "Extract and confirm key contacts from your data",
+    subtitle: "Extract + confirm key contacts from your uploads",
     timeEstimate: "2 min",
     level: "beginner",
-    targetDomains: ["audience"],
-    triggerCondition: (ctx) =>
-      ctx.hasFirstDataset &&
-      !ctx.lockedDomains.includes("audience"),
-    primaryAction: {
-      type: "send_chat",
-      message: "goGarvis: Help me build my contacts list from what you know.",
-    },
+    trigger: (ctx) => ctx.hasFirstDataset && ctx.lockedDomains.includes("identity"),
+    primaryAction: { type: "send_chat", message: "goGarvis: Build my contacts list from my uploads. Propose. I approve." },
     hasAutoDraft: true,
     priority: 70,
   },
 ];
 
-// ─── Helpers ───────────────────────────────────────────────
-
-export function getEligibleBuilders(ctx: BuilderContext): BuilderDef[] {
-  return BUILDERS
-    .filter((b) => b.triggerCondition(ctx))
-    .sort((a, b) => b.priority - a.priority);
-}
-
-export function getTopBuilders(ctx: BuilderContext, count = 3): BuilderDef[] {
-  return getEligibleBuilders(ctx).slice(0, count);
+export function getTopBuilders(ctx: BuilderContext, n = 3) {
+  return BUILDERS.filter((b) => b.trigger(ctx)).sort((a, b) => b.priority - a.priority).slice(0, n);
 }

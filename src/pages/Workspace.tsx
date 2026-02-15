@@ -544,18 +544,13 @@ const Workspace = () => {
                 <div className="px-3 py-2">
                   <AKBProgressTLDR
                     progress={akbProgress.data}
-                    workspaceUnlocked={workspaceUnlocked}
                     hasFirstDataset={gate.hasFirstDataset}
+                    workspaceUnlocked={workspaceUnlocked}
                     onOpenBuilder={(step) => {
                       setAKBBuilderStep(step);
                       setShowAKBBuilder(true);
                     }}
                     onOpenGuide={() => setShowAKBGuide(true)}
-                    onCreateDrafts={() => {
-                      setShowNextSteps(false);
-                      setNextStepsSource(null);
-                      setShowNextSteps(true);
-                    }}
                     onCreateArtifact={() =>
                       handleSend("goGarvis: Welcome to Artifacts. Turn this into a real file.")
                     }
