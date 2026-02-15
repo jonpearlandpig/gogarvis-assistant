@@ -799,54 +799,47 @@ const Workspace = () => {
             </div>
           )}
 
+          {/* Desktop-only inline AKB Builder */}
           {builderOnly && showAKBBuilder && (
-            <div className="fixed inset-0 z-[70] bg-background/80 backdrop-blur-sm md:static md:inset-auto md:z-auto md:bg-transparent md:backdrop-blur-0">
-              <div className="absolute inset-0 md:relative md:inset-auto overflow-hidden md:overflow-visible">
-                <div className="h-full w-full overflow-y-auto p-3 md:p-0">
-                  <div className="flex items-center justify-between mb-2 md:px-3 md:pt-3">
-                    <span className="text-xs font-mono text-foreground">AKB Builder</span>
-                    <button
-                      onClick={() => setShowAKBBuilder(false)}
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border hover:bg-muted/40"
-                    >
-                      ✕ Close
-                    </button>
-                  </div>
-                  <AKBBuilderPanel
-                    workspaceId={null}
-                    initialStep={akbBuilderStep}
-                    onFilesIngested={handleFilesIngested}
-                  />
-                </div>
+            <div className="hidden md:block">
+              <div className="flex items-center justify-between mb-2 px-3 pt-3">
+                <span className="text-xs font-mono text-foreground">AKB Builder</span>
+                <button
+                  onClick={() => setShowAKBBuilder(false)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border hover:bg-muted/40"
+                >
+                  ✕ Close
+                </button>
               </div>
+              <AKBBuilderPanel
+                workspaceId={null}
+                initialStep={akbBuilderStep}
+                onFilesIngested={handleFilesIngested}
+              />
             </div>
           )}
 
-          {/* Ingest Proposal Panel — overlay on mobile, inline on desktop */}
+          {/* Desktop-only inline Ingest Panel */}
           {showIngestPanel && ingest.run && (
-            <div className="fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm md:static md:inset-auto md:z-auto md:bg-transparent md:backdrop-blur-0">
-              <div className="absolute inset-0 md:relative md:inset-auto overflow-hidden md:overflow-visible">
-                <div className="h-full w-full overflow-y-auto p-3 md:p-0">
-                  <IngestProposalPanel
-                    run={ingest.run}
-                    entities={ingest.entities}
-                    proposals={ingest.proposals}
-                    loading={ingest.loading}
-                    classifyResult={ingest.classifyResult}
-                    onApprove={(p) => ingest.approveProposal(p)}
-                    onDeny={(id) => ingest.denyProposal(id)}
-                    onReclassify={(type) => ingest.reclassify(type)}
-                    onEdit={(id, summary, payload) => ingest.editProposal(id, summary, payload)}
-                    onBatchApprove={(ids) => ingest.batchApprove(ids)}
-                    onBatchDeny={(ids) => ingest.batchDeny(ids)}
-                    onApply={(id) => ingest.applyOne(id)}
-                    onClose={() => {
-                      setShowIngestPanel(false);
-                      ingest.reset();
-                    }}
-                  />
-                </div>
-              </div>
+            <div className="hidden md:block">
+              <IngestProposalPanel
+                run={ingest.run}
+                entities={ingest.entities}
+                proposals={ingest.proposals}
+                loading={ingest.loading}
+                classifyResult={ingest.classifyResult}
+                onApprove={(p) => ingest.approveProposal(p)}
+                onDeny={(id) => ingest.denyProposal(id)}
+                onReclassify={(type) => ingest.reclassify(type)}
+                onEdit={(id, summary, payload) => ingest.editProposal(id, summary, payload)}
+                onBatchApprove={(ids) => ingest.batchApprove(ids)}
+                onBatchDeny={(ids) => ingest.batchDeny(ids)}
+                onApply={(id) => ingest.applyOne(id)}
+                onClose={() => {
+                  setShowIngestPanel(false);
+                  ingest.reset();
+                }}
+              />
             </div>
           )}
 
@@ -917,6 +910,53 @@ const Workspace = () => {
           toast.success(`Name updated: ${n}`);
         }}
       />
+
+      {/* ── Mobile-only full-screen overlays (rendered at root level to escape stacking contexts) ── */}
+      {showIngestPanel && ingest.run && (
+        <div className="fixed inset-0 z-[9999] flex flex-col bg-background md:hidden">
+          <div className="flex-1 overflow-y-auto p-3">
+            <IngestProposalPanel
+              run={ingest.run}
+              entities={ingest.entities}
+              proposals={ingest.proposals}
+              loading={ingest.loading}
+              classifyResult={ingest.classifyResult}
+              onApprove={(p) => ingest.approveProposal(p)}
+              onDeny={(id) => ingest.denyProposal(id)}
+              onReclassify={(type) => ingest.reclassify(type)}
+              onEdit={(id, summary, payload) => ingest.editProposal(id, summary, payload)}
+              onBatchApprove={(ids) => ingest.batchApprove(ids)}
+              onBatchDeny={(ids) => ingest.batchDeny(ids)}
+              onApply={(id) => ingest.applyOne(id)}
+              onClose={() => {
+                setShowIngestPanel(false);
+                ingest.reset();
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {builderOnly && showAKBBuilder && (
+        <div className="fixed inset-0 z-[9998] flex flex-col bg-background md:hidden">
+          <div className="flex items-center justify-between p-3 border-b border-border">
+            <span className="text-xs font-mono text-foreground">AKB Builder</span>
+            <button
+              onClick={() => setShowAKBBuilder(false)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded border border-border hover:bg-muted/40"
+            >
+              ✕ Close
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3">
+            <AKBBuilderPanel
+              workspaceId={null}
+              initialStep={akbBuilderStep}
+              onFilesIngested={handleFilesIngested}
+            />
+          </div>
+        </div>
+      )}
 
     </div>
   );
