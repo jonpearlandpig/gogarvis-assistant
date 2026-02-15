@@ -265,6 +265,15 @@ const Workspace = () => {
               if (meta.akbCoverage >= 80 && !celebrated80) {
                 setCelebrated80(true);
                 setShowAKBGuide(false);
+
+                await scopedAKB.scaffoldOnUnlock();
+                await scopedAKB.refresh();
+
+                const first = scopedAKB.projects?.[0];
+                if (!scopedAKB.activeProjectId && first?.id) {
+                  scopedAKB.setActiveProjectId(first.id);
+                }
+
                 toast.success("AKB Foundation Achieved — Workspace Unlocked", { duration: 5000 });
               }
             }

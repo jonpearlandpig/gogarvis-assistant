@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   fetchCanonical,
   upsertCanonical,
@@ -78,6 +78,28 @@ export function useScopedAKB(userId: string | null) {
     }
   }, [userId, activeProjectId]);
 
+  const hasScaffoldedRef = useRef(false);
+
+  const scaffoldOnUnlock = useCallback(async () => {
+    if (!userId) return;
+    if (hasScaffoldedRef.current) return;
+
+    const existing = await fetchProjects(userId);
+    if (existing.length > 0) {
+      hasScaffoldedRef.current = true;
+      return;
+    }
+
+    const p = await createProject(userId, "Project 01");
+
+    await Promise.all([
+      upsertProjectContextField(userId, p.id, "offer", "offer_summary", "TBD", "draft"),
+      upsertProjectContextField(userId, p.id, "goals", "primary_goal", "TBD", "draft"),
+    ]);
+
+    hasScaffoldedRef.current = true;
+  }, [userId]);
+
   return {
     canonical,
     projects,
@@ -90,5 +112,6 @@ export function useScopedAKB(userId: string | null) {
     addProject,
     saveProjectField,
     refresh,
+    scaffoldOnUnlock,
   };
 }
