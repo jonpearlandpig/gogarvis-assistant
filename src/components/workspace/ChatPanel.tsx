@@ -11,6 +11,31 @@ import { useChatUrlIntake } from "@/hooks/useChatUrlIntake";
 import { UrlIngestPrompt } from "@/components/chat/UrlIngestPrompt";
 import { uploadAKBFile } from "@/lib/akbUpload";
 
+type QuickStartStage = "akb_identity" | "akb_goals" | "akb_offer" | "foundation_complete" | "workspace";
+
+const QUICK_START_ACTIONS: Record<QuickStartStage, { label: string; action: string }[]> = {
+  akb_identity: [
+    { label: "Define your identity", action: "save_identity" },
+    { label: "Skip to goals", action: "skip_identity" },
+  ],
+  akb_goals: [
+    { label: "Set your goals", action: "save_goals" },
+    { label: "Continue to offer", action: "next_offer" },
+  ],
+  akb_offer: [
+    { label: "Define your offer", action: "save_offer" },
+    { label: "Keep building", action: "continue_building" },
+  ],
+  foundation_complete: [
+    { label: "Enter workspace", action: "enter_workspace" },
+    { label: "Start Project 01", action: "start_project" },
+  ],
+  workspace: [
+    { label: "Create first artifact", action: "create_artifact" },
+    { label: "Start new project", action: "new_project" },
+  ],
+};
+
 interface Props {
   messages: (Msg & { id?: string })[];
   isStreaming: boolean;
@@ -20,6 +45,8 @@ interface Props {
   onUrlIngested?: () => void;
   userId?: string;
   workspaceId?: string | null;
+  onQuickStart?: (action: string) => void;
+  quickStartStage?: QuickStartStage;
 }
 
 type ComposerItem =
@@ -61,6 +88,8 @@ export function ChatPanel({
   onUrlIngested,
   userId,
   workspaceId,
+  onQuickStart,
+  quickStartStage,
 }: Props) {
   const [input, setInput] = useState("");
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
@@ -107,13 +136,35 @@ export function ChatPanel({
       <ScrollArea className="flex-1 p-4">
         {messages.length === 0 && (
           <div className="flex h-full items-center justify-center">
-            <div className="text-center space-y-3 max-w-md">
+            <div className="text-center space-y-4 max-w-md">
               <div className="font-mono text-2xl font-bold text-primary garvis-text-glow tracking-wider">
                 GARVIS
               </div>
               <p className="text-sm text-muted-foreground">
                 Sovereign Intelligence Layer — ready for your directive.
               </p>
+
+              {quickStartStage && onQuickStart && (
+                <div className="flex flex-wrap justify-center gap-2 pt-2">
+                  {QUICK_START_ACTIONS[quickStartStage].map((a) => (
+                    <button
+                      key={a.action}
+                      type="button"
+                      onClick={() => onQuickStart(a.action)}
+                      className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs text-primary hover:bg-primary/10 hover:border-primary/50 transition-colors"
+                    >
+                      {a.label}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => onQuickStart("suggest")}
+                    className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                  >
+                    What should I do next?
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
