@@ -33,7 +33,7 @@ interface IngestProposalPanelProps {
   onEdit: (proposalId: string, editedSummary: string, editedPayload: any) => Promise<void>;
   onBatchApprove: (ids: string[]) => Promise<void>;
   onBatchDeny: (ids: string[]) => Promise<void>;
-  onApply: (proposalId: string) => Promise<any>;
+  onApply: (proposalId: string) => Promise<void>;
   onClose: () => void;
 }
 
@@ -287,7 +287,7 @@ export function IngestProposalPanel({
               onApprove={async () => { await onApprove(p); }}
               onDeny={() => onDeny(p.id)}
               onEdit={() => openEdit(p)}
-              onApply={() => onApply(p.id)}
+              onApply={async () => { await onApply(p.id); }}
             />
           ))}
 
@@ -390,7 +390,7 @@ function ProposalCard({
   onApprove: () => Promise<void>;
   onDeny: () => void;
   onEdit: () => void;
-  onApply: () => Promise<any>;
+  onApply: () => Promise<void>;
 }) {
   const isApplied = proposal.status === "applied";
   const isDenied = proposal.status === "denied";
