@@ -6,6 +6,25 @@ import { uploadAKBFile } from "@/lib/akbUpload";
 import { DomainCoverageChecklist } from "@/components/akb/DomainCoverageChecklist";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+const DOMAIN_ORDER = [
+  "identity",
+  "goals",
+  "offer",
+  "audience",
+  "assets",
+  "financial_model",
+] as const;
+
+const DOMAIN_LABELS: Record<string, string> = {
+  identity: "Identity",
+  goals: "Goals",
+  offer: "Offer",
+  audience: "Audience",
+  assets: "Assets",
+  financial_model: "Financial Model",
+};
 
 export function AKBBuilderPanel({
   workspaceId,
@@ -62,6 +81,29 @@ export function AKBBuilderPanel({
 
   return (
     <div className="w-[520px] border-l border-border bg-background p-3 space-y-3">
+      {/* ── Domain Stepper ── */}
+      <div className="flex flex-wrap items-center gap-2">
+        {DOMAIN_ORDER.map((d) => {
+          const active = noteDomain === d;
+          return (
+            <button
+              key={d}
+              type="button"
+              onClick={() => {
+                setNoteDomain(d);
+                setTab("inbox");
+              }}
+              className={cn(
+                "rounded-full border border-border px-3 py-1 text-xs transition-colors",
+                "hover:bg-muted/40",
+                active && "bg-muted/50"
+              )}
+            >
+              {DOMAIN_LABELS[d] ?? d}
+            </button>
+          );
+        })}
+      </div>
       <div className="flex items-center justify-between">
         <div className="text-xs font-mono text-foreground">AKB Builder</div>
         <div className="text-[10px] text-muted-foreground">
