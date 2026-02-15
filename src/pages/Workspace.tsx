@@ -48,6 +48,7 @@ import garvisLogo from "@/assets/garvis_logo_black.png";
 import { ScopeIndicator } from "@/components/workspace/ScopeIndicator";
 import { useScopedAKB } from "@/hooks/useScopedAKB";
 import { AKBProgressTLDR } from "@/components/workspace/AKBProgressTLDR";
+import { FirstNextStepCard } from "@/components/onboarding/FirstNextStepCard";
 
 // ─── Helpers ──────────────────────────────────────────────
 const daysBetween = (a: Date, b: Date) =>
@@ -426,6 +427,17 @@ const Workspace = () => {
     }
   };
 
+  // ─── First Next Step handlers (button-only, no typing) ───
+  const handleTryIt = useCallback(() => {
+    handleSend("goGarvis: Try mode. Give me the fastest guided demo with buttons only.");
+    setShowAKBGuide(true);
+  }, [handleSend]);
+
+  const handleBuildIt = useCallback(() => {
+    setShowAKBGuide(true);
+    handleSend("goGarvis: Build mode. Start the minimal 4 builders with buttons only.");
+  }, [handleSend]);
+
   // ─── Upload → Ingest: single source of truth ───
   const handleFilesIngested = useCallback((uploadIds: string[]) => {
     console.log("[INGEST] handleFilesIngested uploadIds:", uploadIds);
@@ -607,6 +619,24 @@ const Workspace = () => {
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden">
               {user?.id && <ModuleNudge userId={user.id} />}
+
+              {/* First Next Step: always visible when no data or TLDR not loaded */}
+              {(!gate.hasFirstDataset || (gate.hasFirstDataset && !akbProgress.data)) && !showAKBGuide && (
+                <div className="px-3 py-2">
+                  <FirstNextStepCard
+                    onTry={handleTryIt}
+                    onBuild={handleBuildIt}
+                    onUpload={() => {
+                      setShowAKBGuide(true);
+                      handleSend("goGarvis: I want to upload a doc. Show upload steps with buttons only.");
+                    }}
+                    onLink={() => {
+                      setShowAKBGuide(true);
+                      handleSend("goGarvis: I want to add a website link. Ask for the link using a single button flow.");
+                    }}
+                  />
+                </div>
+              )}
 
               {/* TL;DR card: always-visible smart actions */}
               {gate.hasFirstDataset && akbProgress.data && !showAKBGuide && (
