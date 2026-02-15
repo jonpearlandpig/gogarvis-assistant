@@ -35,7 +35,7 @@ import { NotHereCard } from "@/components/scope/NotHereCard";
 import { ScopeResolverCard } from "@/components/scope/ScopeResolverCard";
 import { AKBNextStepsCard } from "@/components/chat/AKBNextStepsCard";
 import { toast } from "sonner";
-import { Hammer } from "lucide-react";
+import { Hammer, LogOut } from "lucide-react";
 import { buildReceiptReportArtifactSeed } from "@/lib/receiptsToArtifact";
 import { UOPBadge } from "@/components/profile/UOPBadge";
 import { AKBStatusBar } from "@/components/akb/AKBStatusBar";
@@ -60,7 +60,7 @@ function safeParseDate(v: any): Date | null {
 
 // ─── Component ────────────────────────────────────────────
 const Workspace = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { conversations, create, updateTitle, remove } = useConversations();
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const { messages, addMessage, appendLocal, updateLastAssistant } = useMessages(activeConvId);
@@ -499,6 +499,16 @@ const Workspace = () => {
               </button>
             </div>
           )}
+
+          {/* Sign Out — always visible */}
+          <button
+            onClick={signOut}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors ml-2"
+            title="Sign Out"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Sign Out</span>
+          </button>
         </div>
       </div>
 
