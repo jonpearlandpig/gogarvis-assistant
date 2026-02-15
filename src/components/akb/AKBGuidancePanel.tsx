@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
 import type { AKBDomainProgress } from "@/hooks/useAKBProgress";
 
 const LABELS: Record<string, string> = {
@@ -28,12 +29,13 @@ interface Props {
     lockable: string[];
     domains: AKBDomainProgress[];
   };
-  onLock: (domainKey: string) => void;
+  onLock: (domainKey: string) => Promise<void> | void;
   onContinue: (domainKey: string, choice?: string) => void;
 }
 
 export function AKBGuidancePanel({ progress, onLock, onContinue }: Props) {
   const next = progress.nextDomain;
+  const [locking, setLocking] = useState<string | null>(null);
 
   const lockables = useMemo(
     () => progress.lockable.map((k) => ({ key: k, label: LABELS[k] || k })),
@@ -64,7 +66,13 @@ export function AKBGuidancePanel({ progress, onLock, onContinue }: Props) {
       {/* Domain status list */}
       <div className="mt-3 space-y-1">
         {progress.domains.map((d) => (
-          <div key={d.domain_key} className="flex items-center gap-2 text-xs">
+          <div
+            key={d.domain_key}
+            className={cn(
+              "flex items-center gap-2 text-xs rounded px-2 py-1 border border-transparent",
+              d.locked && "animate-pulse border-border bg-muted/20"
+            )}
+          >
             <span className="text-[10px] w-3 text-center">
               {d.locked ? "🔒" : d.status === "complete" ? "✔" : d.status === "draft" ? "◐" : "○"}
             </span>
@@ -88,11 +96,22 @@ export function AKBGuidancePanel({ progress, onLock, onContinue }: Props) {
             {lockables.map((d) => (
               <button
                 key={d.key}
-                className="rounded-full border border-border px-3 py-1 text-xs hover:bg-muted/40 transition-colors"
-                onClick={() => onLock(d.key)}
+                disabled={locking === d.key}
+                onClick={async () => {
+                  setLocking(d.key);
+                  try {
+                    await onLock(d.key);
+                  } finally {
+                    setLocking(null);
+                  }
+                }}
+                className={cn(
+                  "rounded-full border border-border px-3 py-1 text-xs transition-colors",
+                  "hover:bg-muted/40 disabled:opacity-60 disabled:hover:bg-transparent"
+                )}
                 type="button"
               >
-                Lock {d.label}
+                {locking === d.key ? `Locking ${d.label}…` : `Lock ${d.label}`}
               </button>
             ))}
           </div>
