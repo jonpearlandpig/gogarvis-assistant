@@ -660,6 +660,116 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_connections: {
+        Row: {
+          access_token_encrypted: string | null
+          created_at: string
+          id: string
+          provider: string
+          provider_account_id: string | null
+          refresh_token_encrypted: string | null
+          selected_calendar_ids: Json
+          status: string
+          timezone: string | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+          working_hours_end: string | null
+          working_hours_start: string | null
+        }
+        Insert: {
+          access_token_encrypted?: string | null
+          created_at?: string
+          id?: string
+          provider?: string
+          provider_account_id?: string | null
+          refresh_token_encrypted?: string | null
+          selected_calendar_ids?: Json
+          status?: string
+          timezone?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+          working_hours_end?: string | null
+          working_hours_start?: string | null
+        }
+        Update: {
+          access_token_encrypted?: string | null
+          created_at?: string
+          id?: string
+          provider?: string
+          provider_account_id?: string | null
+          refresh_token_encrypted?: string | null
+          selected_calendar_ids?: Json
+          status?: string
+          timezone?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+          working_hours_end?: string | null
+          working_hours_start?: string | null
+        }
+        Relationships: []
+      }
+      calendar_events_cache: {
+        Row: {
+          attendees_count: number | null
+          calendar_id: string | null
+          connection_id: string
+          created_at: string
+          end_at: string
+          id: string
+          is_all_day: boolean | null
+          last_synced_at: string
+          location: string | null
+          provider_event_id: string
+          start_at: string
+          status: string | null
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          attendees_count?: number | null
+          calendar_id?: string | null
+          connection_id: string
+          created_at?: string
+          end_at: string
+          id?: string
+          is_all_day?: boolean | null
+          last_synced_at?: string
+          location?: string | null
+          provider_event_id: string
+          start_at: string
+          status?: string | null
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          attendees_count?: number | null
+          calendar_id?: string | null
+          connection_id?: string
+          created_at?: string
+          end_at?: string
+          id?: string
+          is_all_day?: boolean | null
+          last_synced_at?: string
+          location?: string | null
+          provider_event_id?: string
+          start_at?: string
+          status?: string | null
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_events_cache_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string
