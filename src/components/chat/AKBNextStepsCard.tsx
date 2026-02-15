@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Check, Zap, ListChecks, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-interface Props {
+type Props = {
   detectedDomain: string;
-  detectedSource: string;
+  detectedSource?: string | null;
   onDismiss: () => void;
   onDraftsCreated?: () => void;
-}
+};
 
 const OFFER_CHOICES = {
   type: {
@@ -31,15 +31,11 @@ const OFFER_CHOICES = {
   },
   pricing: {
     title: "3) Pricing",
-    options: [
-      "Premium / Bespoke",
-      "Mid-market / Project",
-      "Retainer / Partnership",
-    ],
+    options: ["Premium / Bespoke", "Mid-market / Project", "Retainer / Partnership"],
   },
-};
+} as const;
 
-type Phase = "pick" | "drafts_done" | "choices" | "done";
+type Phase = "pick" | "drafts_done" | "choices";
 
 export function AKBNextStepsCard({
   detectedDomain,
@@ -51,13 +47,23 @@ export function AKBNextStepsCard({
   const [busy, setBusy] = useState(false);
   const [selections, setSelections] = useState<Record<string, string>>({});
 
+  const isOffer = detectedDomain === "offer";
+  const allChosen = Boolean(selections.type && selections.buyer && selections.pricing);
+
   const handleQuickStart = async () => {
+    if (!isOffer) {
+      toast.message("Quick Start is not available for this domain yet.");
+      setPhase("choices");
+      return;
+    }
+
     setBusy(true);
     try {
-      const { data, error } = await supabase.rpc("akb_quickstart_offer", {
-        p_source: detectedSource,
+      const { error } = await supabase.rpc("akb_quickstart_offer", {
+        p_source: detectedSource ?? null,
       });
       if (error) throw error;
+
       toast.success("Created 2 Offer drafts");
       setPhase("drafts_done");
       onDraftsCreated?.();
@@ -72,53 +78,67 @@ export function AKBNextStepsCard({
     const next = { ...selections, [key]: value };
     setSelections(next);
 
+    if (!isOffer) return;
+
     try {
-      await supabase.rpc("akb_set_offer_choice", {
+      const { error } = await supabase.rpc("akb_set_offer_choice", {
         p_key: key,
         p_value: value,
       });
+      if (error) throw error;
     } catch (e: any) {
       toast.error(e?.message || "Failed to save choice");
     }
   };
 
-  const allChosen = selections.type && selections.buyer && selections.pricing;
+  const header = useMemo(() => {
+    const d = (detectedDomain || "").toUpperCase();
+    return `Detected focus: ${d}`;
+  }, [detectedDomain]);
 
   // ── Pick phase ──
   if (phase === "pick") {
     return (
-      <div className="border border-primary/20 rounded-lg bg-card p-4 space-y-3 text-sm max-w-md">
-        <div className="font-mono text-xs text-primary tracking-wider">GARVIS</div>
-        <p className="text-foreground">
+      <div className="rounded-2xl border border-border bg-muted/10 p-4">
+        <div className="text-xs font-medium text-foreground">GARVIS</div>
+        <div className="mt-1 text-sm text-foreground">
           I found enough signal to start building your AKB.
-        </p>
-        <p className="text-muted-foreground text-xs">
-          Detected focus: <span className="font-semibold text-foreground uppercase">{detectedDomain}</span>{" "}
-          (what you sell + who it's for) from{" "}
-          <span className="text-foreground">{detectedSource}</span>.
-        </p>
-        <div className="text-xs text-muted-foreground font-medium pt-1">Pick the fastest path:</div>
-        <div className="flex flex-col gap-2">
+        </div>
+        <div className="mt-2 text-xs text-muted-foreground">
+          {header}
+          {detectedSource ? (
+            <>
+              {" "}from <span className="text-foreground/80">{detectedSource}</span>
+            </>
+          ) : null}
+        </div>
+
+        <div className="mt-3 grid gap-2">
           <button
+            type="button"
             onClick={handleQuickStart}
             disabled={busy}
-            className="flex items-center gap-2 text-left px-3 py-2 rounded border border-primary/30 bg-primary/5 text-foreground text-xs hover:bg-primary/10 hover:border-primary/50 transition-colors disabled:opacity-50"
+            className={cn(
+              "w-full rounded-xl border border-border px-3 py-2 text-left text-xs transition-colors",
+              "hover:bg-muted/30 disabled:opacity-50"
+            )}
           >
-            <Zap className="h-3.5 w-3.5 text-primary shrink-0" />
-            Quick Start: Create Offer Drafts (2)
+            Quick Start: Create {isOffer ? "Offer" : "Domain"} Drafts
           </button>
+
           <button
+            type="button"
             onClick={() => setPhase("choices")}
-            className="flex items-center gap-2 text-left px-3 py-2 rounded border border-border text-foreground text-xs hover:bg-muted/40 transition-colors"
+            className="w-full rounded-xl border border-border px-3 py-2 text-left text-xs text-foreground hover:bg-muted/30 transition-colors"
           >
-            <ListChecks className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             Answer 3 Choices (30 sec)
           </button>
+
           <button
+            type="button"
             onClick={onDismiss}
-            className="flex items-center gap-2 text-left px-3 py-2 rounded border border-border text-muted-foreground text-xs hover:bg-muted/40 transition-colors"
+            className="w-full rounded-xl border border-border px-3 py-2 text-left text-xs text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-colors"
           >
-            <X className="h-3.5 w-3.5 shrink-0" />
             Skip for now
           </button>
         </div>
@@ -129,40 +149,30 @@ export function AKBNextStepsCard({
   // ── Drafts done phase ──
   if (phase === "drafts_done") {
     return (
-      <div className="border border-primary/20 rounded-lg bg-card p-4 space-y-3 text-sm max-w-md">
-        <div className="font-mono text-xs text-primary tracking-wider">GARVIS</div>
-        <p className="text-foreground flex items-center gap-2">
-          <Check className="h-4 w-4 text-primary" /> Created (2 drafts)
-        </p>
-        <ul className="text-xs text-muted-foreground space-y-1 pl-4">
-          <li>Offer → "Pearl & Pig Core Services"</li>
-          <li>Offer → "Target Client Profile"</li>
-        </ul>
-        <p className="text-xs text-muted-foreground">
-          Next: Confirm 3 choices to tighten it (optional).
-        </p>
-        <div className="flex flex-wrap gap-2 pt-1">
+      <div className="rounded-2xl border border-border bg-muted/10 p-4">
+        <div className="text-xs font-medium text-foreground">GARVIS</div>
+        <div className="mt-2 text-sm text-foreground">Created (2 drafts)</div>
+        <div className="mt-2 text-xs text-muted-foreground space-y-1">
+          <div>Offer → "Pearl &amp; Pig Core Services"</div>
+          <div>Offer → "Target Client Profile"</div>
+        </div>
+
+        <div className="mt-3 text-xs text-muted-foreground">
+          Optional: confirm 3 choices to tighten it.
+        </div>
+
+        <div className="mt-3 flex flex-wrap gap-2">
           <button
+            type="button"
             onClick={() => setPhase("choices")}
-            className="px-3 py-1.5 rounded border border-primary/30 bg-primary/5 text-xs text-foreground hover:bg-primary/10 transition-colors"
+            className="rounded-full border border-border px-3 py-1.5 text-xs hover:bg-muted/30 transition-colors"
           >
-            Set Type
+            Set Type / Buyer / Pricing
           </button>
           <button
-            onClick={() => setPhase("choices")}
-            className="px-3 py-1.5 rounded border border-primary/30 bg-primary/5 text-xs text-foreground hover:bg-primary/10 transition-colors"
-          >
-            Set Buyer
-          </button>
-          <button
-            onClick={() => setPhase("choices")}
-            className="px-3 py-1.5 rounded border border-primary/30 bg-primary/5 text-xs text-foreground hover:bg-primary/10 transition-colors"
-          >
-            Set Pricing
-          </button>
-          <button
+            type="button"
             onClick={onDismiss}
-            className="px-3 py-1.5 rounded border border-border text-xs text-muted-foreground hover:bg-muted/40 transition-colors"
+            className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-colors"
           >
             Done
           </button>
@@ -172,55 +182,65 @@ export function AKBNextStepsCard({
   }
 
   // ── Choices phase ──
-  if (phase === "choices") {
-    return (
-      <div className="border border-primary/20 rounded-lg bg-card p-4 space-y-4 text-sm max-w-lg">
-        <div className="font-mono text-xs text-primary tracking-wider">GARVIS — Offer Setup</div>
+  return (
+    <div className="rounded-2xl border border-border bg-muted/10 p-4">
+      <div className="text-xs font-medium text-foreground">GARVIS — Offer Setup</div>
 
+      <div className="mt-3 space-y-4">
         {Object.entries(OFFER_CHOICES).map(([key, card]) => (
-          <div key={key} className="space-y-1.5">
-            <div className="text-xs font-medium text-foreground">{card.title}</div>
-            <div className="flex flex-wrap gap-1.5">
-              {card.options.map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => handleChoice(key, opt)}
-                  className={`px-2.5 py-1 rounded text-[11px] border transition-colors ${
-                    selections[key] === opt
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:bg-muted/40 hover:text-foreground"
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
+          <div key={key}>
+            <div className="text-xs text-foreground">{card.title}</div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {card.options.map((opt) => {
+                const active = selections[key] === opt;
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => handleChoice(key, opt)}
+                    className={cn(
+                      "rounded-full border px-3 py-1 text-[11px] transition-colors",
+                      active
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:bg-muted/30 hover:text-foreground"
+                    )}
+                  >
+                    {opt}
+                  </button>
+                );
+              })}
             </div>
           </div>
         ))}
-
-        <div className="flex gap-2 pt-1">
-          {allChosen && (
-            <button
-              onClick={() => {
-                toast.success("Offer choices saved");
-                onDismiss();
-                onDraftsCreated?.();
-              }}
-              className="px-3 py-1.5 rounded border border-primary/30 bg-primary/5 text-xs text-foreground hover:bg-primary/10 transition-colors flex items-center gap-1.5"
-            >
-              <Check className="h-3 w-3" /> Done
-            </button>
-          )}
-          <button
-            onClick={onDismiss}
-            className="px-3 py-1.5 rounded border border-border text-xs text-muted-foreground hover:bg-muted/40 transition-colors"
-          >
-            Skip
-          </button>
-        </div>
       </div>
-    );
-  }
 
-  return null;
+      <div className="mt-4 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/20 transition-colors"
+        >
+          Skip
+        </button>
+
+        <button
+          type="button"
+          disabled={!allChosen}
+          onClick={() => {
+            toast.success("Saved");
+            onDraftsCreated?.();
+            onDismiss();
+          }}
+          className={cn(
+            "rounded-full border px-3 py-1.5 text-xs transition-colors",
+            allChosen
+              ? "border-primary/30 bg-primary/10 text-foreground hover:bg-primary/15"
+              : "border-border text-muted-foreground opacity-50"
+          )}
+        >
+          Done
+        </button>
+      </div>
+    </div>
+  );
 }
