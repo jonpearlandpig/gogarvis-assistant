@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.akb-url-ingest]
 verify_jwt = false
+
+[functions.ingest-classify]
+verify_jwt = false
