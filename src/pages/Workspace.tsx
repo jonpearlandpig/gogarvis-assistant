@@ -502,7 +502,7 @@ const Workspace = () => {
 
           {/* Sign Out — always visible */}
           <button
-            onClick={signOut}
+            onClick={async () => { await signOut(); window.location.href = "/auth"; }}
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors ml-2"
             title="Sign Out"
           >
