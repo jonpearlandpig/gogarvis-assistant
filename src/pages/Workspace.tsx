@@ -454,6 +454,7 @@ const Workspace = () => {
                         setShowAKBBuilder(true);
                       }
                     }}
+                    onClose={() => setShowAKBGuide(false)}
                   />
                 </div>
               )}

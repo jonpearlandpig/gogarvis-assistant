@@ -34,7 +34,7 @@ interface Props {
   onClose?: () => void;
 }
 
-export function AKBGuidancePanel({ progress, onLock, onContinue }: Props) {
+export function AKBGuidancePanel({ progress, onLock, onContinue, onClose }: Props) {
   const next = progress.nextDomain;
   const [locking, setLocking] = useState<string | null>(null);
 
@@ -53,8 +53,23 @@ export function AKBGuidancePanel({ progress, onLock, onContinue }: Props) {
             {progress.coveragePercent}% · {progress.completedCount}/{progress.total} locked
           </div>
         </div>
-        <div className="text-[11px] text-muted-foreground">
-          {next ? <>Next: <span className="text-foreground">{LABELS[next] || next}</span></> : "All minimums met"}
+
+        <div className="flex items-center gap-2">
+          <div className="text-[11px] text-muted-foreground">
+            {next ? <>Next: <span className="text-foreground">{LABELS[next] || next}</span></> : "All minimums met"}
+          </div>
+
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-7 w-7 rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors flex items-center justify-center"
+              aria-label="Close"
+              title="Close"
+            >
+              ×
+            </button>
+          )}
         </div>
       </div>
 
