@@ -7,6 +7,73 @@ import { toast } from "sonner";
 import garvisLogoBlack from "@/assets/garvis_logo_black.png";
 import { AKBStructurePanel } from "@/components/akb/AKBStructurePanel";
 import type { StructureEntry } from "@/components/akb/AKBStructurePanel";
+import { cn } from "@/lib/utils";
+
+function WhyAKBCollapsible({
+  onStartBuilding,
+  onExploreFirst,
+}: {
+  onStartBuilding?: () => void;
+  onExploreFirst?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="w-full max-w-xl mx-auto">
+      <button
+        type="button"
+        onClick={() => setOpen((p) => !p)}
+        className="w-full flex items-center justify-between rounded-xl border border-border bg-muted/20 px-4 py-3 text-sm text-foreground hover:bg-muted/30 transition-colors"
+      >
+        <span className="font-mono">Why build your AKB first?</span>
+        <span className="text-muted-foreground">{open ? "▾" : "▸"}</span>
+      </button>
+
+      <div
+        className={cn(
+          "overflow-hidden transition-all",
+          open ? "max-h-[520px] opacity-100 mt-2" : "max-h-0 opacity-0 mt-0"
+        )}
+      >
+        <div className="rounded-xl border border-border bg-background/40 px-4 py-3 text-sm text-muted-foreground">
+          <div className="space-y-2">
+            <p>
+              Most AI tools fail for predictable reasons: hallucinations, context
+              drift, generic answers, and overreach.
+            </p>
+            <p>
+              GARVIS avoids that by anchoring to your Authority Knowledge Base
+              (AKB): tone, deal breakers, strategic intent, and operating
+              posture.
+            </p>
+            <p>
+              Lock each category when it feels right. Control stays with you.
+              Doing this now gives you a three-lap head start in a four-lap race.
+            </p>
+          </div>
+
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => onStartBuilding?.()}
+              className="w-full sm:w-auto rounded-full border border-border px-5 py-2 text-sm text-foreground hover:bg-muted/40 transition-colors"
+            >
+              Start Building My System
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onExploreFirst?.()}
+              className="w-full sm:w-auto rounded-full border border-border px-5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors"
+            >
+              Explore First (Limited Mode)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface AKBBuildHeroProps {
   isStreaming: boolean;
@@ -65,18 +132,15 @@ export function AKBBuildHero({
           />
         </div>
 
-        {/* Why AKB — collapsible */}
-        <details className="max-w-xl mx-auto text-center group">
-          <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground font-mono transition-colors list-none flex items-center justify-center gap-1">
-            <span className="group-open:hidden">▸</span>
-            <span className="hidden group-open:inline">▾</span>
-            Why build your AKB first?
-          </summary>
-          <div className="mt-3 text-xs text-muted-foreground leading-relaxed space-y-2 text-left border border-border rounded-lg p-4 bg-card/60">
-            <p>Most AI tools hallucinate, drift, or give generic advice. GARVIS anchors to <span className="font-medium text-foreground">your</span> Authority Knowledge Base — your tone, deal breakers, strategic intent, and operating posture — so every answer aligns with how you think.</p>
-            <p className="text-foreground font-medium">Lock each category when it feels right. Control stays with you.</p>
-          </div>
-        </details>
+        {/* Why AKB — collapsible + CTAs */}
+        <WhyAKBCollapsible
+          onStartBuilding={onStartBuilding}
+          onExploreFirst={() =>
+            onSend(
+              "Explore First (Foundation Mode): Give me a brief overview of what you can do right now, and what unlocks as my AKB coverage increases. Keep it concise."
+            )
+          }
+        />
 
         {/* Card with input */}
         <div className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm p-6 shadow-lg shadow-black/20">
