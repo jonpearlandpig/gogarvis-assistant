@@ -4,6 +4,8 @@ import {
   upsertCanonical,
   fetchProjects,
   createProject,
+  renameProject as renameProjectApi,
+  deleteProject as deleteProjectApi,
   fetchProjectContext,
   upsertProjectContextField,
   buildScopedAKB,
@@ -66,6 +68,26 @@ export function useScopedAKB(userId: string | null) {
     }
   }, [userId, refresh]);
 
+  const renameProject = useCallback(async (projectId: string, name: string) => {
+    try {
+      await renameProjectApi(projectId, name);
+      setProjects((prev) => prev.map((p) => p.id === projectId ? { ...p, name } : p));
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to rename project");
+    }
+  }, []);
+
+  const removeProject = useCallback(async (projectId: string) => {
+    try {
+      await deleteProjectApi(projectId);
+      setProjects((prev) => prev.filter((p) => p.id !== projectId));
+      if (activeProjectId === projectId) setActiveProjectId(null);
+      toast.success("Project deleted");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to delete project");
+    }
+  }, [activeProjectId]);
+
   const saveProjectField = useCallback(async (domainKey: string, fieldKey: string, value: string) => {
     if (!userId || !activeProjectId) return;
     try {
@@ -111,6 +133,8 @@ export function useScopedAKB(userId: string | null) {
     loading,
     saveCanonical,
     addProject,
+    renameProject,
+    removeProject,
     saveProjectField,
     refresh,
     scaffoldOnUnlock,

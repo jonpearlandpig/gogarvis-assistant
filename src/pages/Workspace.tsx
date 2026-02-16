@@ -738,6 +738,8 @@ const Workspace = () => {
             activeProjectId={scopedAKB.activeProjectId}
             onSelectProject={(id) => scopedAKB.setActiveProjectId(id)}
             onCreateProject={(name) => scopedAKB.addProject(name)}
+            onRenameProject={(id, name) => scopedAKB.renameProject(id, name)}
+            onDeleteProject={(id) => scopedAKB.removeProject(id)}
             scopeMode={scopeMode}
           />
         )}
