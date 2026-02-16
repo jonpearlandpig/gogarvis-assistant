@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useChatUrlIntake } from "@/hooks/useChatUrlIntake";
 import { UrlIngestPrompt } from "@/components/chat/UrlIngestPrompt";
 import { uploadAKBFile } from "@/lib/akbUpload";
+import { GarvisMessage, isGarvisPayload, type GarvisNextStep } from "@/components/chat/GarvisMessage";
 
 type QuickStartStage = "akb_identity" | "akb_goals" | "akb_offer" | "foundation_complete" | "workspace";
 
@@ -48,6 +49,7 @@ interface Props {
   workspaceId?: string | null;
   onQuickStart?: (action: string) => void;
   quickStartStage?: QuickStartStage;
+  onGarvisAction?: (action: GarvisNextStep) => void;
 }
 
 type ComposerItem =
@@ -92,6 +94,7 @@ export function ChatPanel({
   workspaceId,
   onQuickStart,
   quickStartStage,
+  onGarvisAction,
 }: Props) {
   const [input, setInput] = useState("");
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
@@ -197,9 +200,27 @@ export function ChatPanel({
                   )}
                 >
                   {msg.role === "assistant" ? (
-                    <div className="prose-garvis">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
-                    </div>
+                    (() => {
+                      // Try to detect structured GarvisAnswerPayload
+                      try {
+                        const parsed = JSON.parse(msg.content);
+                        if (isGarvisPayload(parsed)) {
+                          return (
+                            <GarvisMessage
+                              payload={parsed}
+                              onAction={(a) => onGarvisAction?.(a)}
+                            />
+                          );
+                        }
+                      } catch {
+                        // Not JSON — render as markdown
+                      }
+                      return (
+                        <div className="prose-garvis">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      );
+                    })()
                   ) : (
                     <p className="whitespace-pre-wrap">{msg.content}</p>
                   )}
