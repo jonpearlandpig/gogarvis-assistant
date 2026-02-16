@@ -120,6 +120,16 @@ export function useAKBBuilder(
           return;
         }
 
+        // Get next version number
+        const { count } = await supabase
+          .from("akb_law")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .eq("domain", draft.domain);
+
+        const { data: telRow } = await supabase.rpc("gen_telauthorium_id");
+        const telId = telRow || crypto.randomUUID();
+
         const { error: lawErr } = await supabase
           .from("akb_law")
           .insert({
@@ -130,6 +140,8 @@ export function useAKBBuilder(
             body_md: draft.body_md,
             tags: draft.tags || [],
             sources: draft.sources || [],
+            telauthorium_id: telId,
+            version_number: (count || 0) + 1,
             authority: {
               decision_owner_role: "Founder",
               decision_owner_id: userId,
