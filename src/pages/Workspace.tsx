@@ -165,7 +165,6 @@ const Workspace = () => {
       toast.message("Upload a file or add a quick note to begin.");
       return;
     }
-    if (!builderOnly) return;
     setShowAKBBuilder((p) => !p);
   };
 
