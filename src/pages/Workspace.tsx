@@ -89,6 +89,19 @@ const Workspace = () => {
   const akbProgress = useAKBProgress(user?.id || null);
   const akbStructure = useAKBStructure(user?.id || null, null);
   const prevCompletedCount = useRef(0);
+
+  // Derive akbMode from real progress data on load (not just chat meta)
+  useEffect(() => {
+    const pct = akbProgress.data?.coveragePercent ?? 0;
+    if (pct >= 80) {
+      setAKBMode("full");
+      setAKBCoverage(pct);
+    } else if (pct > 0) {
+      setAKBMode("foundation");
+      setAKBCoverage(pct);
+    }
+  }, [akbProgress.data?.coveragePercent]);
+
   const foundationLock = akbMode !== "full";
   const [showAKBGuide, setShowAKBGuide] = useState(false);
 
