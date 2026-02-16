@@ -734,6 +734,11 @@ const Workspace = () => {
               if (activeConvId === id) setActiveConvId(null);
             }}
             onRename={(id, title) => updateTitle(id, title)}
+            projects={scopedAKB.projects.map((p) => ({ id: p.id, name: p.name }))}
+            activeProjectId={scopedAKB.activeProjectId}
+            onSelectProject={(id) => scopedAKB.setActiveProjectId(id)}
+            onCreateProject={(name) => scopedAKB.addProject(name)}
+            scopeMode={scopeMode}
           />
         )}
 
