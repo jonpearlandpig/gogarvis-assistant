@@ -292,7 +292,8 @@ const Workspace = () => {
           onDone: async (meta?: AKBMeta) => {
             setIsStreaming(false);
 
-            if (meta?.akbMode) setAKBMode(meta.akbMode);
+            // akbMode is now derived entirely from akbProgress data (line 94-103)
+            // Do NOT override from chat meta — it can stale-lock the workspace
 
             // Always refetch domain status so status bar stays in sync
             await akbDomains.refetch();
