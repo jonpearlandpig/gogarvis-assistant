@@ -981,7 +981,7 @@ const Workspace = () => {
         </div>
       )}
 
-      {builderOnly && showAKBBuilder && (
+      {showAKBBuilder && (
         <div className="fixed inset-0 z-[9998] flex flex-col bg-background">
           <div className="flex items-center justify-between p-3 border-b border-border">
             <span className="text-xs font-mono text-foreground">AKB Builder</span>
