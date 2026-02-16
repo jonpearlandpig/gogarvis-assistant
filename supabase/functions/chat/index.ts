@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { refusalPayload, enforceNoGuess, safeJsonParse, type GarvisAnswerPayload, type GarvisCitation } from "./lib/noGuess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -551,6 +552,54 @@ CURRENT AKB PROGRESS:
 `.trim() : "";
 
     // ===========================================
+    // NO-GUESS RETRIEVAL GATE
+    // ===========================================
+    // Fetch AKB evidence (drafts, uploads, project context) to build citations
+    const [draftsRes, uploadsRes, projectCtxRes] = await Promise.all([
+      supabase.from("akb_drafts").select("id, domain, title, status").eq("user_id", user.id).in("status", ["approved", "draft"]).limit(50),
+      supabase.from("akb_uploads").select("id, filename, kind").eq("user_id", user.id).limit(50),
+      scope.project_id
+        ? supabase.from("akb_project_context").select("id, domain_key, field_key, value").eq("project_id", scope.project_id).limit(50)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+    const retrievalHits: GarvisCitation[] = [];
+    for (const d of (draftsRes.data || [])) {
+      retrievalHits.push({ kind: d.status === "approved" ? "akb_approved" : "akb_draft", id: d.id, label: d.title || d.domain });
+    }
+    for (const u of (uploadsRes.data || [])) {
+      retrievalHits.push({ kind: "akb_upload", id: u.id, label: u.filename || u.kind });
+    }
+    for (const c of ((projectCtxRes as any).data || [])) {
+      retrievalHits.push({ kind: "project_context", id: c.id, label: `${c.domain_key}/${c.field_key}` });
+    }
+
+    // Determine if this is a factual query that needs evidence
+    // AKB coaching mode (locked) doesn't need evidence — it's asking questions
+    const needsEvidence = akb.mode !== "locked";
+
+    if (needsEvidence && retrievalHits.length === 0) {
+      const out: GarvisAnswerPayload = refusalPayload({
+        headline: "Cannot answer from AKB",
+        reason: "I don't have evidence in your AKB to answer this without guessing. Upload a source, or choose a QuickStart.",
+        next_steps: [
+          { type: "upload", label: "Upload the doc that contains this" },
+          { type: "open_recent_uploads", label: "Review recent uploads" },
+          { type: "open_builder", label: "Quick Profile Lock", step: "identity" },
+        ],
+      });
+
+      return new Response(JSON.stringify(out), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Build retrieval context for the model
+    const retrievalContext = retrievalHits.length > 0
+      ? `\nAVAILABLE AKB EVIDENCE (${retrievalHits.length} items):\n${retrievalHits.map(h => `- [${h.kind}] ${h.label || h.id}`).join("\n")}\n\nIMPORTANT: When answering, you MUST include a "citations" array referencing the evidence you used. If you cannot ground your answer in this evidence, say so.`
+      : "";
+
+    // ===========================================
     // MODEL CALL
     // ===========================================
     const response = await fetch(
@@ -574,6 +623,9 @@ CURRENT AKB PROGRESS:
               : []),
             ...(akbProgressPrompt
               ? [{ role: "system", content: akbProgressPrompt }]
+              : []),
+            ...(retrievalContext
+              ? [{ role: "system", content: retrievalContext }]
               : []),
             ...messages,
           ],

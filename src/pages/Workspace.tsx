@@ -36,6 +36,7 @@ import { ScopeResolverCard } from "@/components/scope/ScopeResolverCard";
 import { AKBNextStepsCard } from "@/components/chat/AKBNextStepsCard";
 import { toast } from "sonner";
 import { Hammer, LogOut, ShieldCheck } from "lucide-react";
+import type { GarvisNextStep } from "@/components/chat/GarvisMessage";
 import { supabase } from "@/integrations/supabase/client";
 import { buildReceiptReportArtifactSeed } from "@/lib/receiptsToArtifact";
 import { UOPBadge } from "@/components/profile/UOPBadge";
@@ -527,6 +528,44 @@ const Workspace = () => {
     }
   }, [handleTryIt, handleBuildIt, handleSend, scopedAKB]);
 
+  // ─── Garvis No-Guess action handler ──────────────────────
+  const handleGarvisAction = useCallback(async (a: GarvisNextStep) => {
+    switch (a.type) {
+      case "upload":
+        // Trigger file input in ChatPanel via a send that opens the picker
+        handleSend("goGarvis: I want to upload a doc.");
+        return;
+      case "open_recent_uploads":
+        // No dedicated state yet — scroll to RecentUploadsPanel
+        toast.message("Check your recent uploads above.");
+        return;
+      case "open_builder":
+        setAKBBuilderStep(a.step as any || "identity");
+        openPanel("builder");
+        return;
+      case "open_ingest_run":
+        await ingest.openRun(a.runId);
+        openPanel("ingest");
+        return;
+      case "create_quickstart_drafts":
+        try {
+          await supabase.rpc(
+            a.domain === "identity" ? "akb_quickstart_identity" : "akb_quickstart_offer",
+            { p_source: "quickstart_button" }
+          );
+          akbDomains.refetch();
+          akbProgress.refetch();
+          gate.refetch();
+          toast.success("Quickstart drafts created");
+        } catch (e: any) {
+          toast.error(e?.message || "Failed to create quickstart drafts");
+        }
+        return;
+      default:
+        return;
+    }
+  }, [handleSend, openPanel, ingest, akbDomains, akbProgress, gate]);
+
   // ─── Upload → Ingest: single source of truth ───
   const handleFilesIngested = useCallback((uploadIds: string[]) => {
     console.log("[INGEST] handleFilesIngested uploadIds:", uploadIds);
@@ -802,6 +841,7 @@ const Workspace = () => {
                 workspaceId={null}
                 onQuickStart={handleSafeNextStep}
                 quickStartStage={gate.hasFirstDataset ? safeStage : undefined}
+                onGarvisAction={handleGarvisAction}
                 onCreateArtifact={async (content) => {
                   if (akbMode !== "full") {
                     toast.error(`Artifacts locked until AKB is at 80% (current: ${akbCoverage}%).`);
