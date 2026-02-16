@@ -725,7 +725,7 @@ const Workspace = () => {
 
       {/* ── BODY ── */}
       <div className="flex flex-1 overflow-hidden">
-        {workspaceUnlocked && (
+        {(workspaceUnlocked || gate.hasFirstDataset) && (
           <ConversationSidebar
             conversations={conversations}
             activeId={activeConvId}
