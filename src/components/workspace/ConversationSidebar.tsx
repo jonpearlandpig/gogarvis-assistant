@@ -23,14 +23,19 @@ interface Props {
   activeProjectId?: string | null;
   onSelectProject?: (id: string | null) => void;
   onCreateProject?: (name: string) => void;
+  onRenameProject?: (id: string, name: string) => void;
+  onDeleteProject?: (id: string) => void;
   scopeMode?: "home" | "project";
 }
 
-export function ConversationSidebar({ conversations, activeId, onSelect, onCreate, onDelete, onRename, projects = [], activeProjectId, onSelectProject, onCreateProject, scopeMode = "home" }: Props) {
+export function ConversationSidebar({ conversations, activeId, onSelect, onCreate, onDelete, onRename, projects = [], activeProjectId, onSelectProject, onCreateProject, onRenameProject, onDeleteProject, scopeMode = "home" }: Props) {
   const { signOut, user } = useAuth();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [editProjectValue, setEditProjectValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const projectInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editingId && inputRef.current) {
@@ -38,6 +43,13 @@ export function ConversationSidebar({ conversations, activeId, onSelect, onCreat
       inputRef.current.select();
     }
   }, [editingId]);
+
+  useEffect(() => {
+    if (editingProjectId && projectInputRef.current) {
+      projectInputRef.current.focus();
+      projectInputRef.current.select();
+    }
+  }, [editingProjectId]);
 
   const startRename = (c: Conversation, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -50,6 +62,19 @@ export function ConversationSidebar({ conversations, activeId, onSelect, onCreat
       onRename(editingId, editValue.trim());
     }
     setEditingId(null);
+  };
+
+  const startProjectRename = (p: Project, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setEditingProjectId(p.id);
+    setEditProjectValue(p.name);
+  };
+
+  const commitProjectRename = () => {
+    if (editingProjectId && editProjectValue.trim() && onRenameProject) {
+      onRenameProject(editingProjectId, editProjectValue.trim());
+    }
+    setEditingProjectId(null);
   };
 
   return (
@@ -85,15 +110,45 @@ export function ConversationSidebar({ conversations, activeId, onSelect, onCreat
               <div
                 key={p.id}
                 className={cn(
-                  "flex items-center gap-2 rounded-md px-3 py-1.5 text-xs cursor-pointer transition-colors",
+                  "group flex items-center gap-2 rounded-md px-3 py-1.5 text-xs cursor-pointer transition-colors",
                   activeProjectId === p.id
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-foreground hover:bg-sidebar-accent/50"
                 )}
                 onClick={() => onSelectProject(p.id)}
+                onDoubleClick={() => startProjectRename(p)}
               >
                 <FolderOpen className="h-3.5 w-3.5 shrink-0 opacity-60" />
-                <span className="truncate flex-1">{p.name}</span>
+                {editingProjectId === p.id ? (
+                  <input
+                    ref={projectInputRef}
+                    value={editProjectValue}
+                    onChange={(e) => setEditProjectValue(e.target.value)}
+                    onBlur={commitProjectRename}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") commitProjectRename();
+                      if (e.key === "Escape") setEditingProjectId(null);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex-1 text-xs bg-transparent border-b border-primary/50 outline-none py-0.5"
+                  />
+                ) : (
+                  <span className="truncate flex-1">{p.name}</span>
+                )}
+                <button
+                  onClick={(e) => { e.stopPropagation(); startProjectRename(p, e); }}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Pencil className="h-3 w-3 text-muted-foreground hover:text-primary" />
+                </button>
+                {onDeleteProject && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDeleteProject(p.id); }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                  </button>
+                )}
               </div>
             ))}
           </div>

@@ -87,6 +87,21 @@ export async function upsertProjectContextField(
   if (error) throw error;
 }
 
+export async function renameProject(projectId: string, name: string) {
+  const { error } = await supabase
+    .from("akb_projects" as any)
+    .update({ name } as any)
+    .eq("id", projectId);
+  if (error) throw error;
+}
+
+export async function deleteProject(projectId: string) {
+  // Delete project context first
+  await supabase.from("akb_project_context" as any).delete().eq("project_id", projectId);
+  const { error } = await supabase.from("akb_projects" as any).delete().eq("id", projectId);
+  if (error) throw error;
+}
+
 export function buildScopedAKB(
   canonical: CanonicalData | null,
   projectFields: ProjectContextField[] | null,
