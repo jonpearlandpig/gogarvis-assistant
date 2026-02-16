@@ -643,7 +643,7 @@ const Workspace = () => {
         {/* Left: GARVIS logo + scope indicator */}
         <div className="flex items-center gap-4">
           <img src={garvisLogo} alt="goGARVIS" className="h-10 sm:h-12" />
-          {workspaceUnlocked && (
+          {gate.hasFirstDataset && (
             <ScopeIndicator
               mode={scopeMode}
               activeProject={activeProject ? { id: activeProject.id, name: activeProject.name } : null}
