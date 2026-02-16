@@ -1,10 +1,15 @@
 import { useState, useRef, useEffect } from "react";
-import { Plus, MessageSquare, Trash2, Shield, Pencil } from "lucide-react";
+import { Plus, MessageSquare, Trash2, Shield, Pencil, FolderOpen, Home, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/useAuth";
 import type { Conversation } from "@/hooks/useConversations";
 import { cn } from "@/lib/utils";
+
+interface Project {
+  id: string;
+  name: string;
+}
 
 interface Props {
   conversations: Conversation[];
@@ -13,9 +18,15 @@ interface Props {
   onCreate: () => void;
   onDelete: (id: string) => void;
   onRename?: (id: string, title: string) => void;
+  // Projects
+  projects?: Project[];
+  activeProjectId?: string | null;
+  onSelectProject?: (id: string | null) => void;
+  onCreateProject?: (name: string) => void;
+  scopeMode?: "home" | "project";
 }
 
-export function ConversationSidebar({ conversations, activeId, onSelect, onCreate, onDelete, onRename }: Props) {
+export function ConversationSidebar({ conversations, activeId, onSelect, onCreate, onDelete, onRename, projects = [], activeProjectId, onSelectProject, onCreateProject, scopeMode = "home" }: Props) {
   const { signOut, user } = useAuth();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -51,9 +62,66 @@ export function ConversationSidebar({ conversations, activeId, onSelect, onCreat
         </span>
       </div>
 
+      {/* Projects section */}
+      {projects.length > 0 && onSelectProject && (
+        <div className="px-2 pt-3 pb-1">
+          <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider px-3 mb-1.5">
+            Projects
+          </div>
+          <div className="space-y-0.5">
+            <div
+              className={cn(
+                "flex items-center gap-2 rounded-md px-3 py-1.5 text-xs cursor-pointer transition-colors",
+                scopeMode === "home"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+              )}
+              onClick={() => onSelectProject(null)}
+            >
+              <Home className="h-3.5 w-3.5 shrink-0 opacity-60" />
+              <span className="truncate flex-1">Home (Canonical)</span>
+            </div>
+            {projects.map((p) => (
+              <div
+                key={p.id}
+                className={cn(
+                  "flex items-center gap-2 rounded-md px-3 py-1.5 text-xs cursor-pointer transition-colors",
+                  activeProjectId === p.id
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                )}
+                onClick={() => onSelectProject(p.id)}
+              >
+                <FolderOpen className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                <span className="truncate flex-1">{p.name}</span>
+              </div>
+            ))}
+          </div>
+          {onCreateProject && (
+            <button
+              onClick={() => onCreateProject("New Project")}
+              className="flex items-center gap-2 px-3 py-1.5 mt-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full rounded-md hover:bg-sidebar-accent/50"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>New Project</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Divider between projects and chats */}
+      {projects.length > 0 && (
+        <div className="px-4 py-1">
+          <div className="border-t border-sidebar-border" />
+        </div>
+      )}
+
       {/* New Chat */}
-      <div className="p-3">
-        <Button onClick={onCreate} variant="outline" className="w-full justify-start gap-2 font-mono text-xs border-border hover:border-primary/50 hover:bg-primary/5">
+      <div className="px-2 pb-1">
+        <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider px-3 mb-1.5 mt-2">
+          Sessions
+        </div>
+        <Button onClick={onCreate} variant="outline" size="sm" className="w-full justify-start gap-2 font-mono text-xs border-border hover:border-primary/50 hover:bg-primary/5">
           <Plus className="h-4 w-4" />
           New Session
         </Button>
