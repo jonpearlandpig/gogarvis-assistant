@@ -663,18 +663,16 @@ const Workspace = () => {
             />
           )}
 
-          {/* Far right: AKB Builder button (only after first dataset, before graduation) */}
-          {builderOnly && (
-            <button
-              onClick={openAKBBuilder}
-              className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded border border-border transition-colors ${
-                showAKBBuilder ? "bg-muted text-foreground" : "hover:bg-muted/40 text-muted-foreground"
-              }`}
-            >
-              <Hammer className="h-4 w-4" />
-              AKB Builder
-            </button>
-          )}
+          {/* Far right: AKB Builder button (always visible) */}
+          <button
+            onClick={openAKBBuilder}
+            className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded border border-border transition-colors ${
+              showAKBBuilder ? "bg-muted text-foreground" : "hover:bg-muted/40 text-muted-foreground"
+            }`}
+          >
+            <Hammer className="h-4 w-4" />
+            AKB Builder
+          </button>
 
           {/* Graduated: full nav */}
           {workspaceUnlocked && (
