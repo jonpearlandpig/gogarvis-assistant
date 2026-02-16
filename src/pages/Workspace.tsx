@@ -49,6 +49,8 @@ import { ScopeIndicator } from "@/components/workspace/ScopeIndicator";
 import { useScopedAKB } from "@/hooks/useScopedAKB";
 import { AKBProgressTLDR } from "@/components/workspace/AKBProgressTLDR";
 import { FirstNextStepCard } from "@/components/onboarding/FirstNextStepCard";
+import { MomentumScreen } from "@/components/workspace/MomentumScreen";
+import { getMomentumState, getNextStep, type MomentumContext } from "@/lib/momentum-state";
 
 // ─── Helpers ──────────────────────────────────────────────
 const daysBetween = (a: Date, b: Date) =>
@@ -459,6 +461,72 @@ const Workspace = () => {
     handleSend("goGarvis: Build mode. Start the minimal 4 builders with buttons only.");
   }, [handleSend]);
 
+  // ─── Momentum Context ──────────────────────────────────
+  const momentumCtx: MomentumContext = useMemo(() => {
+    const progress = akbProgress.data;
+    const lockedDomains = (progress?.domains || []).filter((d: any) => d.locked).map((d: any) => d.domain_key);
+    return {
+      identityLocked: lockedDomains.includes("identity"),
+      coveragePercent: progress?.coveragePercent ?? 0,
+      workspaceUnlocked,
+      hasProject: (scopedAKB.projects?.length ?? 0) > 0,
+      hasArtifact: (artifacts?.length ?? 0) > 0,
+      projectCount: scopedAKB.projects?.length ?? 0,
+      artifactCount: artifacts?.length ?? 0,
+      uploadCount: 0,
+    };
+  }, [akbProgress.data, workspaceUnlocked, scopedAKB.projects, artifacts]);
+
+  const handleMomentumAction = useCallback((action: string) => {
+    switch (action) {
+      case "start_system":
+        openBuilderStep("identity");
+        return;
+      case "try_demo":
+        handleTryIt();
+        return;
+      case "returning_user":
+        handleBuildIt();
+        return;
+      case "build_core_akb":
+        setShowAKBGuide(true);
+        return;
+      case "upload":
+        handleSend("goGarvis: I want to upload a doc. Show upload steps with buttons only.");
+        return;
+      case "strategic_question":
+        handleSend("goGarvis: Ask me a strategic question about my business.");
+        return;
+      case "complete_domains":
+        setShowAKBGuide(true);
+        return;
+      case "review_drafts":
+        handleSend("goGarvis: Show me my existing drafts so I can review them.");
+        return;
+      case "create_project":
+        scopedAKB.addProject("Project 01");
+        return;
+      case "create_artifact":
+        handleSend("goGarvis: Welcome to Artifacts. Turn this into a real file.");
+        return;
+      case "system_health":
+        handleSend("goGarvis: Review my system health and tell me what needs attention.");
+        return;
+      case "advance_project":
+        handleSend("goGarvis: What is the next step for my active project?");
+        return;
+      case "optimize_system":
+        handleSend("goGarvis: Optimize my system. What can be improved?");
+        return;
+      case "review_projects":
+        handleSend("goGarvis: Show me a summary of all my projects.");
+        return;
+      default:
+        handleSend("goGarvis: What is the safest next step for me right now?");
+        return;
+    }
+  }, [handleTryIt, handleBuildIt, handleSend, scopedAKB]);
+
   // ─── Upload → Ingest: single source of truth ───
   const handleFilesIngested = useCallback((uploadIds: string[]) => {
     console.log("[INGEST] handleFilesIngested uploadIds:", uploadIds);
@@ -639,64 +707,12 @@ const Workspace = () => {
             </div>
           )}
 
-          {/* Builder-only hero view: centered logo + input when no conversation yet */}
-          {builderOnly && messages.length === 0 && !showAKBBuilder ? (
-            <AKBBuildHero
-              isStreaming={isStreaming}
-              onSend={handleSend}
-              userId={user?.id}
-              workspaceId={null}
-              onFilesUploaded={(uploadIds) => {
-                gate.refetch();
-                handleFilesIngested(uploadIds);
-              }}
-              structureEntries={akbStructure.entries}
-              onStartBuilding={() => {
-                setShowAKBGuide(true);
-                handleSend("I want to start building my AKB. Guide me through it.");
-              }}
-            />
+          {/* Momentum Screen: deterministic landing when no active chat */}
+          {messages.length === 0 && !showAKBBuilder && !showAKBGuide ? (
+            <MomentumScreen ctx={momentumCtx} onAction={handleMomentumAction} />
           ) : (
             <div className="flex-1 flex flex-col overflow-hidden">
               {user?.id && <ModuleNudge userId={user.id} />}
-
-              {/* First Next Step: always visible when no data or TLDR not loaded */}
-              {(!gate.hasFirstDataset || (gate.hasFirstDataset && !akbProgress.data)) && !showAKBGuide && (
-                <div className="px-3 py-2">
-                  <FirstNextStepCard
-                    onTry={handleTryIt}
-                    onBuild={handleBuildIt}
-                    onUpload={() => {
-                      setShowAKBGuide(true);
-                      handleSend("goGarvis: I want to upload a doc. Show upload steps with buttons only.");
-                    }}
-                    onLink={() => {
-                      setShowAKBGuide(true);
-                      handleSend("goGarvis: I want to add a website link. Ask for the link using a single button flow.");
-                    }}
-                  />
-                </div>
-              )}
-
-              {/* TL;DR card: always-visible smart actions */}
-              {gate.hasFirstDataset && akbProgress.data && !showAKBGuide && (
-                <div className="px-3 py-2">
-                  <AKBProgressTLDR
-                    progress={akbProgress.data}
-                    hasFirstDataset={gate.hasFirstDataset}
-                    workspaceUnlocked={workspaceUnlocked}
-                    onOpenBuilder={(step) => {
-                      setAKBBuilderStep(step);
-                      openPanel("builder");
-                    }}
-                    onOpenGuide={() => setShowAKBGuide(true)}
-                    onCreateArtifact={() =>
-                      handleSend("goGarvis: Welcome to Artifacts. Turn this into a real file.")
-                    }
-                    onSendChat={(msg) => handleSend(msg)}
-                  />
-                </div>
-              )}
 
 
               {showAKBGuide && akbProgress.data && (
