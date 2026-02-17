@@ -18,7 +18,8 @@ export type StreamResult =
   | { kind: "json"; payload: any }
   | { kind: "stream" };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const CHAT_URL = `${API_BASE}/api/chat`;
 
 async function parseJsonIfPresent(resp: Response): Promise<any | null> {
   const ct = resp.headers.get("content-type") || "";
