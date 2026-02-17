@@ -60,13 +60,13 @@ serve(async (req) => {
 
     // Verify user
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: authError } = await supabase.auth.getClaims(token);
-    if (authError || !claimsData?.claims) {
+    const { data: claimsData, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !claimsData?.user) {
       return new Response(JSON.stringify({ error: "Not authenticated" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = claimsData.claims.sub as string;
+    const userId = claimsData.user.id as string;
 
     // Fetch ingest run
     const { data: run, error: runErr } = await supabase

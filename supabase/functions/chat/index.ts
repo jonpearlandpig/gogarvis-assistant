@@ -354,9 +354,9 @@ serve(async (req) => {
     });
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: authError } = await supabase.auth.getClaims(token);
-    if (authError || !claimsData?.claims) {
-      console.error("Auth claims error:", authError);
+    const { data: claimsData, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !claimsData?.user) {
+      console.error("Auth user error:", authError);
       return new Response(
         JSON.stringify({ error: "User not authenticated" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -445,7 +445,6 @@ serve(async (req) => {
         strategic_intent: canonical?.strategic_intent,
       };
 
-      merged = {
         ...governance,
         ...(projectOverlay || {}),
       };
@@ -469,6 +468,7 @@ serve(async (req) => {
     let profileInjection = "";
     const { data: uopRow } = await supabase
       .from("user_profile_versions")
+      profileInjection = `
       .select("config_json, version_number, telauthorium_id")
       .eq("user_id", user.id)
       .order("version_number", { ascending: false })

@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
       });
 
       const { avgConfidence, activationScore } = await computeActivationScore(
-        supabase,
+        supabase as any,
         user.id,
         det.module_key
       );
@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
