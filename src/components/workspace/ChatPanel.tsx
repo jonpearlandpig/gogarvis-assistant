@@ -11,6 +11,32 @@ import { useChatUrlIntake } from "@/hooks/useChatUrlIntake";
 import { UrlIngestPrompt } from "@/components/chat/UrlIngestPrompt";
 import { uploadAKBFile } from "@/lib/akbUpload";
 import { GarvisMessage, isGarvisPayload, type GarvisNextStep } from "@/components/chat/GarvisMessage";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
+import { validateFileChange } from "@/lib/utils";
+// Helper: Detect if a message is a file change suggestion from LLM
+function parseFileChangeSuggestion(msg: string): null | { file: string; summary: string; diff: string } {
+  // Example: LLM emits a JSON block with {"fileChange": { file, summary, diff }}
+  try {
+    const parsed = JSON.parse(msg);
+    if (parsed && parsed.fileChange && parsed.fileChange.file && parsed.fileChange.diff) {
+      return {
+        file: parsed.fileChange.file,
+        summary: parsed.fileChange.summary || "File change suggested by LLM.",
+        diff: parsed.fileChange.diff,
+      };
+    }
+  } catch {}
+  return null;
+}
 
 type QuickStartStage = "akb_identity" | "akb_goals" | "akb_offer" | "foundation_complete" | "workspace";
 
@@ -103,8 +129,31 @@ export function ChatPanel({
   const fileRef = useRef<HTMLInputElement>(null);
   const urlIntake = useChatUrlIntake((url) => onUrlIngested?.(url));
 
+  // State for file change confirmation
+  const [pendingFileChange, setPendingFileChange] = useState<null | { file: string; summary: string; diff: string }>(null);
+  const [applyingChange, setApplyingChange] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Watch for new assistant messages that are file change suggestions
+  useEffect(() => {
+    if (!messages.length) return;
+    const last = messages[messages.length - 1];
+    if (last.role === "assistant" && last.content) {
+      const suggestion = parseFileChangeSuggestion(last.content);
+      if (suggestion) {
+        const validation = validateFileChange(suggestion);
+        if (!validation.valid) {
+          setValidationError(validation.reason || 'File change not allowed.');
+          setTimeout(() => setValidationError(null), 6000);
+          return;
+        }
+        setPendingFileChange(suggestion);
+      }
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -145,6 +194,50 @@ export function ChatPanel({
 
   return (
     <div className="flex h-full flex-col">
+      {/* File Change Confirmation Dialog */}
+      {validationError && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] bg-red-100 text-red-800 border border-red-300 px-4 py-2 rounded shadow">
+          {validationError}
+        </div>
+      )}
+      {pendingFileChange && (
+        <AlertDialog open onOpenChange={(open) => { if (!open) setPendingFileChange(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Review File Change</AlertDialogTitle>
+              <AlertDialogDescription>
+                <div className="mb-2">
+                  <strong>File:</strong> {pendingFileChange.file}
+                </div>
+                <div className="mb-2">
+                  <strong>Summary:</strong> {pendingFileChange.summary}
+                </div>
+                <div className="mb-2 max-h-40 overflow-auto border p-2 bg-muted text-xs font-mono">
+                  <pre>{pendingFileChange.diff}</pre>
+                </div>
+                Please review the proposed change. Confirm to apply, or cancel to ignore.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setPendingFileChange(null)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                disabled={applyingChange}
+                onClick={async () => {
+                  setApplyingChange(true);
+                  // TODO: Actually apply the file change (call backend or patch logic)
+                  toast.success("File change applied (stub)");
+                  setApplyingChange(false);
+                  setPendingFileChange(null);
+                }}
+              >
+                Confirm & Apply
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
       {/* Messages */}
       <ScrollArea className="flex-1 p-4">
         {messages.length === 0 && (
