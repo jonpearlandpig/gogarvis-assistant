@@ -363,7 +363,7 @@ serve(async (req) => {
       );
     }
 
-    const user = { id: claimsData.claims.sub as string };
+    const user = { id: claimsData.user.id as string };
 
     // ===========================================
     // SCOPE ENFORCEMENT
@@ -445,6 +445,7 @@ serve(async (req) => {
         strategic_intent: canonical?.strategic_intent,
       };
 
+      merged = {
         ...governance,
         ...(projectOverlay || {}),
       };
@@ -468,7 +469,6 @@ serve(async (req) => {
     let profileInjection = "";
     const { data: uopRow } = await supabase
       .from("user_profile_versions")
-      profileInjection = `
       .select("config_json, version_number, telauthorium_id")
       .eq("user_id", user.id)
       .order("version_number", { ascending: false })
@@ -496,8 +496,8 @@ serve(async (req) => {
 
       profileInjection = `
 USER OPERATING PROFILE ACTIVE:
-Version: v${uopRow.version_number}
-Telauthorium ID: ${uopRow.telauthorium_id}
+Version: v${uopRow?.version_number}
+Telauthorium ID: ${uopRow?.telauthorium_id}
 
 Phase Bias: ${uop.phase_bias || "none"}
 Objective: ${uop.objective || ""}
