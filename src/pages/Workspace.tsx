@@ -67,6 +67,7 @@ function safeParseDate(v: any): Date | null {
 
 // ─── Component ────────────────────────────────────────────
 const Workspace = () => {
+  const isMobile = useIsMobile();
   const { user, signOut } = useAuth();
   const { conversations, create, updateTitle, remove } = useConversations();
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
