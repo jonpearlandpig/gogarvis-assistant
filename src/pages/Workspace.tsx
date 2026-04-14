@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ConversationSidebar } from "@/components/workspace/ConversationSidebar";
 import { ChatPanel } from "@/components/workspace/ChatPanel";
 import { ArtifactPanel } from "@/components/workspace/ArtifactPanel";
@@ -35,7 +36,8 @@ import { NotHereCard } from "@/components/scope/NotHereCard";
 import { ScopeResolverCard } from "@/components/scope/ScopeResolverCard";
 import { AKBNextStepsCard } from "@/components/chat/AKBNextStepsCard";
 import { toast } from "sonner";
-import { Hammer, LogOut, ShieldCheck } from "lucide-react";
+import { Hammer, LogOut, ShieldCheck, Menu, X } from "lucide-react";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import type { GarvisNextStep } from "@/components/chat/GarvisMessage";
 import { supabase } from "@/integrations/supabase/client";
 import { buildReceiptReportArtifactSeed } from "@/lib/receiptsToArtifact";
