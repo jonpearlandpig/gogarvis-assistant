@@ -782,6 +782,8 @@ const Workspace = () => {
           </div>
         </SheetContent>
       </Sheet>
+
+      <OperatorModeBanner
         open={showOperatorBanner}
         onClose={() => setShowOperatorBanner(false)}
       />
