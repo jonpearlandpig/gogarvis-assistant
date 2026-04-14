@@ -87,6 +87,13 @@ const Workspace = () => {
    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
+  // Swipe gestures for mobile sidebar
+  useSwipeGesture({
+    onSwipeRight: () => setMobileSidebarOpen(true),
+    onSwipeLeft: () => setMobileSidebarOpen(false),
+    enabled: isMobile,
+  });
+
   // AKB soft-lock state
   const [akbMode, setAKBMode] = useState<"locked" | "foundation" | "full">("locked");
   const [akbCoverage, setAKBCoverage] = useState<number>(0);
