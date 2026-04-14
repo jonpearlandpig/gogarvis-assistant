@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { ConversationSidebar } from "@/components/workspace/ConversationSidebar";
 import { ChatPanel } from "@/components/workspace/ChatPanel";
 import { ArtifactPanel } from "@/components/workspace/ArtifactPanel";
@@ -85,6 +86,13 @@ const Workspace = () => {
    const [nextStepsSource, setNextStepsSource] = useState<string | null>(null);
    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
    const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  // Swipe gestures for mobile sidebar
+  useSwipeGesture({
+    onSwipeRight: () => setMobileSidebarOpen(true),
+    onSwipeLeft: () => setMobileSidebarOpen(false),
+    enabled: isMobile,
+  });
 
   // AKB soft-lock state
   const [akbMode, setAKBMode] = useState<"locked" | "foundation" | "full">("locked");
