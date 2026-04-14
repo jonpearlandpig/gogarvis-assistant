@@ -99,7 +99,7 @@ function ExampleChips({ onPick }: { onPick: (text: ComposerItem) => void }) {
           key={t}
           type="button"
           onClick={() => onPick(t)}
-          className="rounded-full border border-border/60 px-2.5 py-0.5 text-[10px] text-muted-foreground/70 hover:text-muted-foreground hover:bg-muted/30 transition-colors"
+          className="rounded-full border border-border/60 px-3 py-1.5 text-xs text-muted-foreground/70 hover:text-muted-foreground hover:bg-muted/30 transition-colors"
         >
           {t}
         </button>
@@ -323,7 +323,7 @@ export function ChatPanel({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1.5"
+                      className="h-9 md:h-7 px-3 md:px-2 text-sm md:text-xs text-muted-foreground hover:text-foreground gap-1.5"
                       onClick={() => {
                         navigator.clipboard.writeText(msg.content);
                         setCopiedIdx(i);
@@ -338,7 +338,7 @@ export function ChatPanel({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1.5"
+                        className="h-9 md:h-7 px-3 md:px-2 text-sm md:text-xs text-muted-foreground hover:text-foreground gap-1.5"
                         onClick={() => onCreateArtifact(msg.content)}
                       >
                         <FileText className="h-3 w-3" />
@@ -408,7 +408,7 @@ export function ChatPanel({
                   e.stopPropagation();
                   setMenuOpen((p) => !p);
                 }}
-                className="h-9 w-9"
+                className="h-11 w-11 md:h-9 md:w-9"
               >
                 <Plus className="h-4 w-4" />
               </Button>
@@ -465,11 +465,10 @@ export function ChatPanel({
               value={input}
               onChange={(e) => {
                 setInput(e.target.value);
-                // Only scan on user typing (non-empty), not on programmatic clear
                 if (e.target.value.trim()) urlIntake.scan(e.target.value);
               }}
               placeholder="Go Garvis!"
-              className="min-h-[44px] max-h-32 resize-none bg-muted border-border font-mono text-sm"
+              className="min-h-[56px] md:min-h-[44px] max-h-32 resize-none bg-muted border-border text-base md:text-sm"
               rows={1}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -480,12 +479,12 @@ export function ChatPanel({
             />
 
             {isStreaming ? (
-              <Button type="button" variant="secondary" className="h-9" onClick={onStop}>
+              <Button type="button" variant="secondary" className="h-11 md:h-9" onClick={onStop}>
                 <Square className="h-4 w-4 mr-2" />
                 Stop
               </Button>
             ) : (
-              <Button type="button" className="h-9" onClick={handleSubmit} disabled={!input.trim()}>
+              <Button type="button" className="h-11 md:h-9" onClick={handleSubmit} disabled={!input.trim()}>
                 <Send className="h-4 w-4 mr-2" />
                 Send
               </Button>
