@@ -790,7 +790,8 @@ const Workspace = () => {
 
       {/* ── BODY ── */}
       <div className="flex flex-1 overflow-hidden">
-        {(workspaceUnlocked || gate.hasFirstDataset) && (
+        {/* Desktop sidebar */}
+        {!isMobile && (workspaceUnlocked || gate.hasFirstDataset) && (
           <ConversationSidebar
             conversations={conversations}
             activeId={activeConvId}
@@ -810,6 +811,32 @@ const Workspace = () => {
             scopeMode={scopeMode}
           />
         )}
+
+        {/* Mobile sidebar drawer */}
+        <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+          <SheetContent side="left" className="w-72 p-0">
+            {(workspaceUnlocked || gate.hasFirstDataset) && (
+              <ConversationSidebar
+                conversations={conversations}
+                activeId={activeConvId}
+                onSelect={(id) => { setActiveConvId(id); setMobileSidebarOpen(false); }}
+                onCreate={async () => { await handleNewChat(); setMobileSidebarOpen(false); }}
+                onDelete={(id) => {
+                  remove(id);
+                  if (activeConvId === id) setActiveConvId(null);
+                }}
+                onRename={(id, title) => updateTitle(id, title)}
+                projects={scopedAKB.projects.map((p) => ({ id: p.id, name: p.name }))}
+                activeProjectId={scopedAKB.activeProjectId}
+                onSelectProject={(id) => { scopedAKB.setActiveProjectId(id); setMobileSidebarOpen(false); }}
+                onCreateProject={(name) => scopedAKB.addProject(name)}
+                onRenameProject={(id, name) => scopedAKB.renameProject(id, name)}
+                onDeleteProject={(id) => scopedAKB.removeProject(id)}
+                scopeMode={scopeMode}
+              />
+            )}
+          </SheetContent>
+        </Sheet>
 
         <div className="flex flex-1 overflow-hidden flex-col">
           {/* Recent Uploads action queue — always visible when user has data */}
