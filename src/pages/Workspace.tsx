@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { ConversationSidebar } from "@/components/workspace/ConversationSidebar";
 import { ChatPanel } from "@/components/workspace/ChatPanel";
 import { ArtifactPanel } from "@/components/workspace/ArtifactPanel";
