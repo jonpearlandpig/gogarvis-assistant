@@ -1,28 +1,51 @@
 
 
-# Add API Keys Panel — User-Friendly Settings Sheet
+# Mobile-First UI Overhaul
 
-Instead of embedding the API Keys panel into the Profile side panel or adding another top-bar button, we will use a **bottom sheet / slide-over drawer** triggered from a simple "Connections" button inside the existing Profile panel. This keeps the workspace clean and puts API key management exactly where a non-technical user would look: under their profile settings.
+Shane's feedback is clear: text boxes are hard to see and fill on a phone, and the layout doesn't format well for mobile. The current UI uses small text (`text-xs`, `text-[10px]`), dense top bars with many buttons, and a desktop-first sidebar layout. Here's the fix.
 
-## Approach
+## Problem Areas
 
-Use the existing `Sheet` component (already in `src/components/ui/sheet.tsx`) to render the `APIKeysPanel` as a slide-up drawer. The trigger will be a friendly "Connections" button at the bottom of the `ProfilePanel`.
+1. **Top bar**: Crammed with 6-8 small text buttons that overflow or become invisible on a 393px viewport
+2. **Chat composer**: Textarea uses `text-sm font-mono` with `min-h-[44px]` — too small on phones; the plus/send buttons crowd it
+3. **Example chips**: `text-[10px]` — nearly unreadable on mobile
+4. **Conversation sidebar**: Always rendered as a side column, takes space on narrow screens
+5. **Message bubbles**: `max-w-[85%]` with `text-sm` — acceptable but action buttons below are tiny (`h-7 px-2 text-xs`)
 
 ## Changes
 
-### 1. `src/components/workspace/ProfilePanel.tsx`
-- Import `Sheet`, `SheetContent`, `SheetHeader`, `SheetTitle`, `SheetDescription` and `APIKeysPanel`
-- Add a "Connections" button (with a plug/link icon) below the "Save Profile" button
-- Clicking it opens a Sheet (slide-up on mobile, slide-right on desktop) containing the `APIKeysPanel`
-- Label it "Connections" not "API Keys" — friendlier for non-tech users
+### 1. Top bar — mobile-friendly collapse (`Workspace.tsx`)
+- On mobile (`< md`): Show only the logo, AKB progress pill, and a hamburger/menu icon
+- Move Profile, AKB, Artifacts, Integrity, Sign Out into a slide-down mobile menu or Sheet
+- Keep AKB Builder button visible but icon-only on mobile
 
-### 2. `src/components/workspace/APIKeysPanel.tsx`
-- Rename the card title from "API Keys" to "Connected Apps"
-- Change description to "Connect external tools like Jennie or Compass to your account"
-- Rename "New Key" button to "New Connection"
-- In the create dialog, change "Key label" placeholder to "App name (e.g. Jennie)"
-- Hide the "Scopes" checkboxes behind a "Show advanced" toggle — default them all to checked
-- This makes the entire flow feel like connecting an app, not managing API keys
+### 2. Conversation sidebar — drawer on mobile (`Workspace.tsx`)
+- On mobile: Hide the sidebar column entirely; render it inside a Sheet (slide-from-left) triggered by the hamburger icon
+- On desktop: Keep current behavior
 
-Two files changed, zero new navigation concepts.
+### 3. Chat composer — larger touch targets (`ChatPanel.tsx`)
+- Increase textarea `min-h` to `56px` on mobile, use `text-base` (16px — prevents iOS zoom)
+- Make Send/Stop buttons taller: `h-11` on mobile
+- Make Plus button `h-11 w-11` on mobile
+- Increase example chip text to `text-xs` (from `text-[10px]`) and padding to `px-3 py-1.5`
+
+### 4. Message action buttons — bigger tap targets (`ChatPanel.tsx`)
+- Increase Copy/Save buttons from `h-7` to `h-9` on mobile with `text-sm`
+
+### 5. Textarea base component — prevent iOS zoom (`textarea.tsx`)
+- Add `text-base md:text-sm` to prevent Safari auto-zoom on focus (triggered when font < 16px)
+
+### 6. Input base component — same iOS zoom fix (`input.tsx`)
+- Already has `text-base md:text-sm` — no change needed
+
+## Files Modified
+
+| File | What changes |
+|------|-------------|
+| `src/pages/Workspace.tsx` | Mobile menu sheet for top bar; sidebar as drawer on mobile |
+| `src/components/workspace/ChatPanel.tsx` | Larger composer, chips, action buttons for touch |
+| `src/components/ui/textarea.tsx` | Add `text-base md:text-sm` default |
+| `src/index.css` | Minor touch-target utility if needed |
+
+No new dependencies. No new pages. Uses existing `Sheet` and `useIsMobile` hook.
 
