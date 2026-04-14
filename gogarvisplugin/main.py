@@ -1,8 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
-from .routers import akb
-# import your routers here later
+from .routers import akb, v1
 
 app = FastAPI(title="Garvis Sovereign Engine")
 
@@ -27,3 +26,4 @@ async def health_check():
     }
 
 app.include_router(akb.router)
+app.include_router(v1.router)
