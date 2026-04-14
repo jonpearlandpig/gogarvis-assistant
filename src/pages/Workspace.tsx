@@ -83,6 +83,8 @@ const Workspace = () => {
    const [showIngestPanel, setShowIngestPanel] = useState(false);
    const [showNextSteps, setShowNextSteps] = useState(false);
    const [nextStepsSource, setNextStepsSource] = useState<string | null>(null);
+   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // AKB soft-lock state
   const [akbMode, setAKBMode] = useState<"locked" | "foundation" | "full">("locked");
