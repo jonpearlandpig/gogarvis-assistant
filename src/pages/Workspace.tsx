@@ -644,12 +644,19 @@ const Workspace = () => {
         }}
       />
 
-      {/* ── TOP BAR ── */}
       <div className="h-14 shrink-0 border-b border-border flex items-center justify-between px-4">
-        {/* Left: GARVIS logo + scope indicator */}
-        <div className="flex items-center gap-4">
+        {/* Left: hamburger (mobile) + logo + scope */}
+        <div className="flex items-center gap-3">
+          {isMobile && (
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              className="p-2 -ml-2 text-muted-foreground hover:text-foreground"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          )}
           <img src={garvisLogo} alt="goGARVIS" className="h-10 sm:h-12" />
-          {gate.hasFirstDataset && (
+          {!isMobile && gate.hasFirstDataset && (
             <ScopeIndicator
               mode={scopeMode}
               activeProject={activeProject ? { id: activeProject.id, name: activeProject.name } : null}
@@ -659,17 +666,17 @@ const Workspace = () => {
           )}
         </div>
 
-        {/* Right: AKB status + controls */}
-        <div className="flex items-center gap-3">
+        {/* Right */}
+        <div className="flex items-center gap-2 md:gap-3">
           {gate.hasFirstDataset && akbProgress.data && (
             <AKBProgressPill
               percent={akbProgress.data.coveragePercent}
-              label={akbProgress.data.nextDomain ? `Next: ${akbProgress.data.nextDomain}` : "Complete"}
+              label={!isMobile && akbProgress.data.nextDomain ? `Next: ${akbProgress.data.nextDomain}` : undefined}
               onClick={() => setShowAKBGuide((p) => !p)}
             />
           )}
 
-          {/* Far right: AKB Builder button (always visible) */}
+          {/* AKB Builder — icon-only on mobile */}
           <button
             onClick={openAKBBuilder}
             className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded border border-border transition-colors ${
@@ -677,11 +684,11 @@ const Workspace = () => {
             }`}
           >
             <Hammer className="h-4 w-4" />
-            AKB Builder
+            <span className="hidden md:inline">AKB Builder</span>
           </button>
 
-          {/* Graduated: full nav */}
-          {workspaceUnlocked && (
+          {/* Desktop nav items */}
+          {!isMobile && workspaceUnlocked && (
             <div className="flex items-center gap-3">
               <UOPBadge version={uopVersion} onClick={() => togglePanel("profile")} />
               <button onClick={() => togglePanel("profile")} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
@@ -699,29 +706,82 @@ const Workspace = () => {
             </div>
           )}
 
-          {/* Integrity Test */}
-          <button
-            onClick={runIntegrityTest}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            title="Integrity Test"
-          >
-            <ShieldCheck className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Integrity</span>
-          </button>
+          {/* Mobile menu trigger */}
+          {isMobile && (
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-2 text-muted-foreground hover:text-foreground"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          )}
 
-          {/* Sign Out — always visible */}
-          <button
-            onClick={async () => { await signOut(); window.location.href = "/auth"; }}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors ml-2"
-            title="Sign Out"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Sign Out</span>
-          </button>
+          {/* Desktop-only: Integrity + Sign Out */}
+          {!isMobile && (
+            <>
+              <button
+                onClick={runIntegrityTest}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                title="Integrity Test"
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Integrity
+              </button>
+              <button
+                onClick={async () => { await signOut(); window.location.href = "/auth"; }}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors ml-2"
+                title="Sign Out"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Sign Out
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      <OperatorModeBanner
+      {/* Mobile menu sheet */}
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetContent side="right" className="w-64 p-0">
+          <div className="flex flex-col py-4">
+            <div className="px-4 pb-3 border-b border-border mb-2">
+              <span className="text-sm font-medium text-foreground">Menu</span>
+            </div>
+            {gate.hasFirstDataset && (
+              <div className="px-4 py-2">
+                <ScopeIndicator
+                  mode={scopeMode}
+                  activeProject={activeProject ? { id: activeProject.id, name: activeProject.name } : null}
+                  projects={scopedAKB.projects.map((p) => ({ id: p.id, name: p.name }))}
+                  onSelectProject={(id) => { scopedAKB.setActiveProjectId(id); setMobileMenuOpen(false); }}
+                />
+              </div>
+            )}
+            {workspaceUnlocked && (
+              <>
+                <button onClick={() => { togglePanel("profile"); setMobileMenuOpen(false); }} className="px-4 py-3 text-left text-sm text-foreground hover:bg-muted transition-colors">
+                  Profile
+                </button>
+                <button onClick={() => { togglePanel("akb"); setMobileMenuOpen(false); }} className="px-4 py-3 text-left text-sm text-foreground hover:bg-muted transition-colors">
+                  AKB
+                </button>
+                <button onClick={() => { togglePanel("artifacts"); setMobileMenuOpen(false); }} className="px-4 py-3 text-left text-sm text-foreground hover:bg-muted transition-colors">
+                  Artifacts
+                </button>
+                <button onClick={() => { createReceiptsReportArtifact(); setMobileMenuOpen(false); }} className="px-4 py-3 text-left text-sm text-foreground hover:bg-muted transition-colors">
+                  Receipts Report
+                </button>
+              </>
+            )}
+            <button onClick={() => { runIntegrityTest(); setMobileMenuOpen(false); }} className="px-4 py-3 text-left text-sm text-muted-foreground hover:bg-muted transition-colors flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4" /> Integrity
+            </button>
+            <button onClick={async () => { await signOut(); window.location.href = "/auth"; }} className="px-4 py-3 text-left text-sm text-muted-foreground hover:bg-muted transition-colors flex items-center gap-2">
+              <LogOut className="h-4 w-4" /> Sign Out
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
         open={showOperatorBanner}
         onClose={() => setShowOperatorBanner(false)}
       />
