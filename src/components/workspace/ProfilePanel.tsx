@@ -6,7 +6,9 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import APIKeysPanel from "@/components/workspace/APIKeysPanel";
+import { X, Plug } from "lucide-react";
 import type { UOPConfig, UOPVersion } from "@/hooks/useUserProfile";
 
 interface Props {
@@ -33,6 +35,7 @@ export function ProfilePanel({ version, profileName, onSave, onRename, onClose }
   const [notes, setNotes] = useState(existing?.advanced_notes || "");
   const [focus, setFocus] = useState(existing?.garvis_lens || DEFAULT_FOCUS);
   const [saving, setSaving] = useState(false);
+  const [showConnections, setShowConnections] = useState(false);
 
   useEffect(() => {
     setName(profileName);
@@ -180,11 +183,26 @@ export function ProfilePanel({ version, profileName, onSave, onRename, onClose }
         </div>
       </div>
 
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border space-y-2">
         <Button onClick={handleSave} disabled={saving} size="sm" className="w-full text-xs">
           {saving ? "Saving…" : "Save Profile"}
         </Button>
+        <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => setShowConnections(true)}>
+          <Plug className="h-3.5 w-3.5 mr-1.5" /> Connections
+        </Button>
       </div>
+
+      <Sheet open={showConnections} onOpenChange={setShowConnections}>
+        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Connected Apps</SheetTitle>
+            <SheetDescription>Connect external tools to your account</SheetDescription>
+          </SheetHeader>
+          <div className="mt-4">
+            <APIKeysPanel />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

@@ -32,9 +32,10 @@ export default function APIKeysPanel() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [newLabel, setNewLabel] = useState("");
-  const [newScopes, setNewScopes] = useState<string[]>(["akb:read", "projects:read"]);
+  const [newScopes, setNewScopes] = useState<string[]>(ALL_SCOPES.map(s => s.id));
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const fetchKeys = useCallback(async () => {
     if (!user) return;
@@ -86,13 +87,13 @@ export default function APIKeysPanel() {
     <Card className="border-border">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Key className="h-5 w-5" /> API Keys
+          <Key className="h-5 w-5" /> Connected Apps
         </CardTitle>
-        <CardDescription>Manage API keys for external integrations (e.g. Jennie, Compass)</CardDescription>
+        <CardDescription>Connect external tools like Jennie or Compass to your account</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Button size="sm" onClick={() => { setShowCreate(true); setGeneratedKey(null); setNewLabel(""); setNewScopes(["akb:read", "projects:read"]); }}>
-          <Plus className="h-4 w-4 mr-1" /> New Key
+        <Button size="sm" onClick={() => { setShowCreate(true); setGeneratedKey(null); setNewLabel(""); setNewScopes(ALL_SCOPES.map(s => s.id)); setShowAdvanced(false); }}>
+          <Plus className="h-4 w-4 mr-1" /> New Connection
         </Button>
 
         {loading ? (
@@ -126,11 +127,11 @@ export default function APIKeysPanel() {
         <Dialog open={showCreate} onOpenChange={setShowCreate}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{generatedKey ? "Key Created" : "Create API Key"}</DialogTitle>
+              <DialogTitle>{generatedKey ? "Connection Ready" : "New Connection"}</DialogTitle>
               <DialogDescription>
                 {generatedKey
-                  ? "Copy this key now — it won't be shown again."
-                  : "Give the key a label and choose permissions."}
+                  ? "Copy this connection key now — it won't be shown again."
+                  : "Name this connection so you can identify it later."}
               </DialogDescription>
             </DialogHeader>
 
@@ -146,24 +147,33 @@ export default function APIKeysPanel() {
               </div>
             ) : (
               <div className="space-y-4">
-                <Input placeholder="Key label (e.g. Jennie connector)" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} />
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Scopes</p>
-                  {ALL_SCOPES.map((s) => (
-                    <label key={s.id} className="flex items-center gap-2 text-sm">
-                      <Checkbox
-                        checked={newScopes.includes(s.id)}
-                        onCheckedChange={(checked) => {
-                          setNewScopes((prev) => checked ? [...prev, s.id] : prev.filter((x) => x !== s.id));
-                        }}
-                      />
-                      {s.label}
-                    </label>
-                  ))}
-                </div>
+                <Input placeholder="App name (e.g. Jennie)" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} />
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground underline"
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                >
+                  {showAdvanced ? "Hide advanced" : "Show advanced"}
+                </button>
+                {showAdvanced && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Permissions</p>
+                    {ALL_SCOPES.map((s) => (
+                      <label key={s.id} className="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          checked={newScopes.includes(s.id)}
+                          onCheckedChange={(checked) => {
+                            setNewScopes((prev) => checked ? [...prev, s.id] : prev.filter((x) => x !== s.id));
+                          }}
+                        />
+                        {s.label}
+                      </label>
+                    ))}
+                  </div>
+                )}
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-                  <Button onClick={handleCreate} disabled={creating}>{creating ? "Creating…" : "Generate Key"}</Button>
+                  <Button onClick={handleCreate} disabled={creating}>{creating ? "Connecting…" : "Connect"}</Button>
                 </DialogFooter>
               </div>
             )}
