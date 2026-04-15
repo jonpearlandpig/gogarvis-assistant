@@ -18,8 +18,10 @@ export type StreamResult =
   | { kind: "json"; payload: any }
   | { kind: "stream" };
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-const CHAT_URL = `${API_BASE}/api/chat`;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const CHAT_URL = SUPABASE_URL
+  ? `${SUPABASE_URL.replace(/\/$/, "")}/functions/v1/chat`
+  : "";
 
 async function parseJsonIfPresent(resp: Response): Promise<any | null> {
   const ct = resp.headers.get("content-type") || "";
@@ -42,6 +44,10 @@ export async function streamChat({
   onDone: (meta?: AKBMeta) => void;
   signal?: AbortSignal;
 }): Promise<StreamResult> {
+  if (!CHAT_URL) {
+    throw new Error("Backend URL is not configured");
+  }
+
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
 
