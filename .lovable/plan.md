@@ -1,51 +1,54 @@
 
 
-# Mobile-First UI Overhaul
+# Deploy Public REST API as Live Edge Functions
 
-Shane's feedback is clear: text boxes are hard to see and fill on a phone, and the layout doesn't format well for mobile. The current UI uses small text (`text-xs`, `text-[10px]`), dense top bars with many buttons, and a desktop-first sidebar layout. Here's the fix.
+## Context
+Shane has a Cloudflare Worker (Jennie) ready to connect. The FastAPI v1 routes in `gogarvisplugin/` exist but aren't deployed anywhere Shane can reach. The `api_keys` table and key generation edge function already work. We need to deploy the actual API endpoints as Supabase Edge Functions so they're live at a real URL.
 
-## Problem Areas
+## What Shane Gets
+- **Base URL**: `https://dqtdqjqffikfzebfpoul.supabase.co/functions/v1/api-v1`
+- **Auth**: `Authorization: Bearer gv_live_...` (generated from the Connections panel)
+- **Endpoints** via query param routing:
+  - `GET /api-v1?route=projects` — list his projects
+  - `GET /api-v1?route=projects&id=xxx` — single project with context
+  - `GET /api-v1?route=domains` — AKB domain coverage
+  - `GET /api-v1?route=drafts` — AKB drafts
+  - `GET /api-v1?route=artifacts` — artifacts list
 
-1. **Top bar**: Crammed with 6-8 small text buttons that overflow or become invisible on a 393px viewport
-2. **Chat composer**: Textarea uses `text-sm font-mono` with `min-h-[44px]` — too small on phones; the plus/send buttons crowd it
-3. **Example chips**: `text-[10px]` — nearly unreadable on mobile
-4. **Conversation sidebar**: Always rendered as a side column, takes space on narrow screens
-5. **Message bubbles**: `max-w-[85%]` with `text-sm` — acceptable but action buttons below are tiny (`h-7 px-2 text-xs`)
+## Implementation
 
-## Changes
+### 1. Create Edge Function: `supabase/functions/api-v1/index.ts`
+Single edge function handling all v1 routes. Logic:
+- Extract `Authorization: Bearer gv_live_...` header
+- SHA-256 hash the token, look up in `api_keys` table using service role client
+- Verify not revoked, check scopes
+- Route based on `route` query param
+- Query the relevant tables scoped to `user_id` from the API key
+- Return JSON
 
-### 1. Top bar — mobile-friendly collapse (`Workspace.tsx`)
-- On mobile (`< md`): Show only the logo, AKB progress pill, and a hamburger/menu icon
-- Move Profile, AKB, Artifacts, Integrity, Sign Out into a slide-down mobile menu or Sheet
-- Keep AKB Builder button visible but icon-only on mobile
+This mirrors the FastAPI `v1.py` logic exactly, but runs on Lovable Cloud infrastructure.
 
-### 2. Conversation sidebar — drawer on mobile (`Workspace.tsx`)
-- On mobile: Hide the sidebar column entirely; render it inside a Sheet (slide-from-left) triggered by the hamburger icon
-- On desktop: Keep current behavior
+### 2. Add to `supabase/config.toml`
+```
+[functions.api-v1]
+verify_jwt = false
+```
+Must be false since external callers use API keys, not JWTs.
 
-### 3. Chat composer — larger touch targets (`ChatPanel.tsx`)
-- Increase textarea `min-h` to `56px` on mobile, use `text-base` (16px — prevents iOS zoom)
-- Make Send/Stop buttons taller: `h-11` on mobile
-- Make Plus button `h-11 w-11` on mobile
-- Increase example chip text to `text-xs` (from `text-[10px]`) and padding to `px-3 py-1.5`
+### 3. Test with `curl_edge_functions`
+Validate the function deploys and responds correctly.
 
-### 4. Message action buttons — bigger tap targets (`ChatPanel.tsx`)
-- Increase Copy/Save buttons from `h-7` to `h-9` on mobile with `text-sm`
+### 4. Generate Shane's API Key
+Use the existing Connections panel or generate one directly, then provide Shane with:
+- The base URL
+- His API key
+- Example curl commands
 
-### 5. Textarea base component — prevent iOS zoom (`textarea.tsx`)
-- Add `text-base md:text-sm` to prevent Safari auto-zoom on focus (triggered when font < 16px)
+## Files Changed
+| File | Change |
+|------|--------|
+| `supabase/functions/api-v1/index.ts` | New — public API edge function |
+| `supabase/config.toml` | Add `[functions.api-v1]` block |
 
-### 6. Input base component — same iOS zoom fix (`input.tsx`)
-- Already has `text-base md:text-sm` — no change needed
-
-## Files Modified
-
-| File | What changes |
-|------|-------------|
-| `src/pages/Workspace.tsx` | Mobile menu sheet for top bar; sidebar as drawer on mobile |
-| `src/components/workspace/ChatPanel.tsx` | Larger composer, chips, action buttons for touch |
-| `src/components/ui/textarea.tsx` | Add `text-base md:text-sm` default |
-| `src/index.css` | Minor touch-target utility if needed |
-
-No new dependencies. No new pages. Uses existing `Sheet` and `useIsMobile` hook.
+No frontend changes needed. No new tables.
 
